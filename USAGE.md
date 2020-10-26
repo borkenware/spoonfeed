@@ -1,10 +1,13 @@
-# Using SpoonFeed
+# Using Spoonfeed
 
 ## Writing markdown
-SpoonFeed uses a markdown superset to give more possibility to documentation writers. This superset has been designed
+Spoonfeed uses a markdown superset to give more possibility to documentation writers. This superset has been designed
 to be easy to read for people reading the markdown files and to not be ugly.
 
 ### Document Linking
+TBD
+
+#### Using refs
 TBD
 
 ### Alert Boxes
@@ -18,11 +21,11 @@ They are achieved by using a block quote which has on its first line either `inf
 ```
 
 ### H6 Headings
-SpoonFeed uses H6 headings as table and code blocks headers rather than the unused h6 block. We strongly recommend
+Spoonfeed uses H6 headings as table and code blocks headers rather than the unused h6 block. We strongly recommend
 labelling all your tables & code blocks with them.
 
 ### HTTP Routes
-SpoonFeed has support to highlight HTTP routes, which will be really useful if you are documenting a REST API.
+Spoonfeed has support to highlight HTTP routes, which will be really useful if you are documenting a REST API.
 HTTP routes should be prefixed with `%%`, then followed by their method in all uppercase, and then the path (which
 should by convention exclude base path for readability). Route parameters must be wrapped in curly brackets.
 
@@ -31,18 +34,17 @@ should by convention exclude base path for readability). Route parameters must b
 ```
 
 ## Building the Web interface
-SpoonFeed outputs a bundled [Preact](https://preactjs.com) application, and uses [Rollup](http://rollupjs.org)
+Spoonfeed outputs a bundled [Preact](https://preactjs.com) application, and uses [Rollup](http://rollupjs.org)
 internally for bundling.
 
 ### Configuration
 Since there is a lot you can configure, this is documented in a separate document. See CONFIGURING.md for more details
-on how to configure SpoonFeed.
+on how to configure Spoonfeed.
 
 ### Development
 During development you'll be able to see live changes you do to the documentation to have visual feedback about
 what you're doing. You can also see live changes to the configuration to some extent. Some configuration changes
 do require a complete restart.
-
 ```
 spoonfeed serve
 ```
@@ -52,18 +54,25 @@ To bundle the Preact app and get ready to deploy it, make sure your configuratio
 ```
 spoonfeed bundle
 ```
+The outputs will be in the `build` directory (unless overridden in the config). Once that's done, you have 2 methods
+of putting your docs online, depending on how you configured Spoonfeed:
 
-The outputs will be in the `build` directory (unless overridden in the config) and will contain at least:
- - A `dist` folder with all the bundled assets
- - An `index.html` file that should be served to clients
+#### Without server-side pre-rendering
+You simply need to serve all the contents of the build folder. Just set your web server document root to that
+and fire it up. We recommend setting a really high cache lifetime for everything served from `/dist/`.
 
-### Server-side pre-rendering
-You can also make SpoonFeed output a small node server to have server-side pre-rendering. This means when accessing
-your documentation pages, people will receive a fully-rendered webpage. This will help making the webpage to show
-faster on users with slower computers or networks, but will also help enhance your SEO score.
+#### With server-side pre-rendering
+If you enabled server-side pre-rendering, then Spoonfeed did output a functional Node application in the
+`build` folder. The node application is ready for production usage and contains the necessary security features
+for such use.
 
-The generated node server has no dependency and only runs uses standard NodeJS lib, so you can just start it as soon
-as it's generated without having to worry about dependencies. The server should be safe to expose to the public even
-without a reverse proxy, as we add important security headers and let you configure SSL for HTTPS support.
+First, you need to install dependencies by running `pnpm i` (or the install command of your preferred package
+manager) in the build folder.
 
-Once the app has been bundled, you can simply start the server by doing `node build/index.js`.
+Then, you can fire up the server simply by running `node server.js`. By default, it'll listen to `0.0.0.0:80` (or
+`0.0.0.0:443` if SSL is enabled), but this can be changed using the following environment vars:
+ - `SPOONFEED_BIND_ADDR`: Controls the interface Spoonfeed listens to.
+ - `SPOONFEED_BIND_PORT`: Controls the port Spoonfeed listens to.
+
+If HTTPS upgrades are enabled, a plain HTTP server will be listen to `<SPOONFEED_BIND_ADDR>:80` and redirect incoming
+requests to the HTTPS server. This cannot be changed.
