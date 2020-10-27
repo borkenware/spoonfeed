@@ -1,5 +1,4 @@
 # Using Spoonfeed
-
 ## Writing markdown
 Spoonfeed uses a markdown superset to give more possibility to documentation writers. This superset has been designed
 to be easy to read for people reading the plain markdown files, while giving more possibilities.
@@ -12,10 +11,20 @@ Our markdown superset supports underlining using a "semi-standard" syntax used i
 `__Underlined content__`.
 
 ### Document Linking
-TBD
+To make references between documents, you can simply use a link tag, where the link is in the following format:
+```
+Uncategorized document:
+##document-file-name
 
-#### Using refs
-TBD
+Categorized document:
+##category-slug/document-file-name
+
+Final link:
+[Look this document](##important/information)
+```
+
+The document file name must not include the sorting prefix (`<int>-`), and the link will not be parsed if the document
+doesn't exist. Spoonfeed will issue a warning in that case.
 
 ### Alert Boxes
 Alert boxes are blocks of text that'll be emphasized, to give the user either an important information or to warn

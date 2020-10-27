@@ -125,8 +125,33 @@ export interface MarkdownTableNode {
 
 export interface MarkdownRulerNode { type: BlockType.Ruler }
 
+export interface MarkdownLinkNode {
+  type: InlineType.Link,
+  href: string,
+  content: string
+}
+
+export interface MarkdownAnchorNode {
+  type: InlineType.Anchor,
+  anchor: string,
+  content: string
+}
+
+export interface MarkdownDocumentNode {
+  type: InlineType.Document,
+  category: string | null,
+  document: string,
+  content: string
+}
+
+export interface MarkdownImageNode {
+  type: InlineType.Image,
+  alt: string,
+  content: string
+}
+
 export type MarkdownNode = MarkdownSimpleNode | MarkdownCommentNode | MarkdownHeadingNode |
   MarkdownNoteNode | MarkdownCodeNode | MarkdownListNode | MarkdownHttpNode | MarkdownHttpItemNode |
-  MarkdownTableNode | MarkdownRulerNode
+  MarkdownTableNode | MarkdownRulerNode | MarkdownLinkNode | MarkdownAnchorNode | MarkdownDocumentNode
 
 export type MarkdownAstTree = MarkdownNode[]

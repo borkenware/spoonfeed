@@ -25,7 +25,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { InlineType, MarkdownAstTree, RawMarkdownNode, MarkdownNode } from './types'
+import {
+  InlineType, MarkdownAstTree, RawMarkdownNode,
+  MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
+  MarkdownDocumentNode, MarkdownImageNode
+} from './types'
+
 import { parseInline } from './util'
 
 const LINK_PATH = '((\\/[\\+~%\\/\\.\\w\\-_]*)?\\??([\\-\\+=&;%@\\.\\w_]*)#?([\\.\\!\\/\\\\\\w]*))'
@@ -40,25 +45,74 @@ const InlineRuleSet = [
   { regexp: /(?:(?<!\\)\`)(.+?)(?:(?<!\\)`)(?!`)/img, type: InlineType.Code, extract: 1 },
   { regexp: /(?<!\\)<br\/?>/img, type: InlineType.LineBreak },
 
-  { regexp: new RegExp(`!\\[[^\\]]*]\\(${LINK}\\)`, 'img'), type: InlineType.Image },
-  { regexp: new RegExp(`!\\[[^\\]]*]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Image },
-  { regexp: new RegExp(`\\[[^\\]]*]\\(${LINK}\\)`, 'img'), type: InlineType.Link },
-  { regexp: new RegExp(`\\[[^\\]]*]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Link },
-  // anchor
-  // documents
+  { regexp: new RegExp(`!\\[([^\\]]+(?:\\\\])?)+]\\(${LINK}\\)`, 'img'), type: InlineType.Image },
+  { regexp: new RegExp(`!\\[([^\\]]+(?:\\\\])?)+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Image },
+  { regexp: new RegExp(`\\[([^\\]]+(?:\\\\])?)+]\\(${LINK}\\)`, 'img'), type: InlineType.Link },
+  { regexp: new RegExp(`\\[([^\\]]+(?:\\\\])?)+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Link },
+  { regexp: /\[([^\]]+(?:\\])?)+]\(##[a-z-/]+\)/img, type: InlineType.Document },
+  { regexp: /\[([^\]]+(?:\\])?)+]\(#[a-z-]+\)/img, type: InlineType.Anchor },
   { regexp: new RegExp(LINK, 'img'), type: InlineType.Link },
   { regexp: new RegExp(EMAIL, 'img'), type: InlineType.Email }
 ]
 
-function formatBlock (node: RawMarkdownNode): MarkdownNode | null {
-  switch (node.type) {
-    case InlineType.Link:
-      return null
-    case InlineType.Image:
-      return null
+function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNode {
+  const content = node.content as string
+  if (content.startsWith('[')) {
+    const [ , label, href ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
+    if (href.startsWith('#')) {
+      return {
+        type: InlineType.Anchor,
+        anchor: href,
+        content: label
+      }
+    }
+    return {
+      type: InlineType.Link,
+      href: href,
+      content: label
+    }
   }
 
-  return node as MarkdownNode
+  return {
+    type: InlineType.Link,
+    href: content,
+    content
+  }
+}
+
+function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
+  const content = node.content as string
+  const [ , label, category, document ] = content.match(/\[(.+?(?<!\\))]\(##([^\/]+)(?:\/(.+))?\)/i)!!
+  return {
+    type: InlineType.Document,
+    category: document ? category : null,
+    document: document ? document : category,
+    content: label
+  }
+}
+
+function parseImage (node: RawMarkdownNode): MarkdownImageNode {
+  const content = node.content as string
+  const [ , label, src ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
+  return {
+    type: InlineType.Image,
+    alt: label,
+    content: src
+  }
+}
+
+function formatBlock (block: RawMarkdownNode): MarkdownNode {
+  switch (block.type) {
+    case InlineType.Link:
+    case InlineType.Anchor:
+      return parseLink(block)
+    case InlineType.Document:
+      return parseDocument(block)
+    case InlineType.Image:
+      return parseImage(block)
+  }
+
+  return block as MarkdownNode
 }
 
 function formatBlocks (blocks: RawMarkdownNode[]): MarkdownNode[] {
