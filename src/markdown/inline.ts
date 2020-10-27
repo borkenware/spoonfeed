@@ -28,14 +28,17 @@
 import {
   InlineType, MarkdownAstTree, RawMarkdownNode,
   MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
-  MarkdownDocumentNode, MarkdownImageNode
+  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode, BlockType
 } from './types'
 
 import { parseInline } from './util'
 
 const LINK_PATH = '((\\/[\\+~%\\/\\.\\w\\-_]*)?\\??([\\-\\+=&;%@\\.\\w_]*)#?([\\.\\!\\/\\\\\\w]*))'
-const LINK = `((([A-Za-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?[A-Za-z0-9\\.\\-]+|(www\\.|[\\-;:&=\\+\\$,\\w]+@)[A-Za-z0-9\\.\\-]+)${LINK_PATH}?)`
-const EMAIL = '(?:(?:[^<>()[]\\.,;:s@"]+(?:.[^<>()[]\\.,;:s@"]+)*)|(?:".+"))@(?:(?:[[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}])|(?:(?:[a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))'
+const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?([a-z0-9\\.\\-]+|(www\\.|[\\-;:&=\\+\\$,\\w]+@)[a-z0-9\\.\\-]+))${LINK_PATH}?)`
+const EMAIL = '(?:(?:[^<>()[]\\.,;:s@"]+(?:.[^<>()[]\\.,;:s@"]+)*)|(?:".+"))@(?:(?:[[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}])|(?:(?:[a-z-0-9]+.)+[a-z]{2,}))'
+
+const LINK_RE = new RegExp(LINK, 'i')
+const YT_RE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/i
 
 const InlineRuleSet = [
   { regexp: /(?:(?<!\\)\*){2}(.+?)(?:(?<!\\)\*){2}(?!\*)/img, type: InlineType.Bold, recurse: true, extract: 1 },
@@ -45,12 +48,14 @@ const InlineRuleSet = [
   { regexp: /(?:(?<!\\)\`)(.+?)(?:(?<!\\)`)(?!`)/img, type: InlineType.Code, extract: 1 },
   { regexp: /(?<!\\)<br\/?>/img, type: InlineType.LineBreak },
 
-  { regexp: new RegExp(`!\\[([^\\]]+(?:\\\\])?)+]\\(${LINK}\\)`, 'img'), type: InlineType.Image },
-  { regexp: new RegExp(`!\\[([^\\]]+(?:\\\\])?)+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Image },
-  { regexp: new RegExp(`\\[([^\\]]+(?:\\\\])?)+]\\(${LINK}\\)`, 'img'), type: InlineType.Link },
-  { regexp: new RegExp(`\\[([^\\]]+(?:\\\\])?)+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Link },
-  { regexp: /\[([^\]]+(?:\\])?)+]\(##[a-z-/]+\)/img, type: InlineType.Document },
-  { regexp: /\[([^\]]+(?:\\])?)+]\(#[a-z-]+\)/img, type: InlineType.Anchor },
+  { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: InlineType.Image },
+  { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Image },
+  { regexp: new RegExp(`!!v\\[${LINK}]`, 'img'), type: InlineType.Video },
+  { regexp: new RegExp(`!!v\\[${LINK_PATH}]`, 'img'), type: InlineType.Video },
+  { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: InlineType.Link },
+  { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Link },
+  { regexp: /\[(?:[^\]]|\\])+]\(##[a-z-/]+\)/img, type: InlineType.Document },
+  { regexp: /\[(?:[^\]]|\\])+]\(#[a-z-]+\)/img, type: InlineType.Anchor },
   { regexp: new RegExp(LINK, 'img'), type: InlineType.Link },
   { regexp: new RegExp(EMAIL, 'img'), type: InlineType.Email }
 ]
@@ -63,20 +68,20 @@ function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNod
       return {
         type: InlineType.Anchor,
         anchor: href,
-        content: label
+        label
       }
     }
     return {
       type: InlineType.Link,
       href: href,
-      content: label
+      label
     }
   }
 
   return {
     type: InlineType.Link,
     href: content,
-    content
+    label: content
   }
 }
 
@@ -87,7 +92,7 @@ function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
     type: InlineType.Document,
     category: document ? category : null,
     document: document ? document : category,
-    content: label
+    label
   }
 }
 
@@ -97,7 +102,25 @@ function parseImage (node: RawMarkdownNode): MarkdownImageNode {
   return {
     type: InlineType.Image,
     alt: label,
-    content: src
+    src
+  }
+}
+
+function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
+  const content = (node.content as string).slice(4, -1)
+  if (YT_RE.test(content)) {
+    const [ ,,,,, id ] = content.match(YT_RE)!!
+    return {
+      type: InlineType.Video,
+      kind: 'youtube',
+      src: id
+    }
+  }
+
+  return {
+    type: InlineType.Video,
+    kind: 'media',
+    src: content
   }
 }
 
@@ -110,6 +133,8 @@ function formatBlock (block: RawMarkdownNode): MarkdownNode {
       return parseDocument(block)
     case InlineType.Image:
       return parseImage(block)
+    case InlineType.Video:
+      return parseVideo(block)
   }
 
   return block as MarkdownNode

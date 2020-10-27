@@ -46,11 +46,12 @@ export enum InlineType {
   Underline = 'underline',
   StrikeThrough = 'strike-through',
   Code = 'code',
-  Image = 'image',
   Link = 'link',
   Email = 'email',
   Anchor = 'anchor', 
   Document = 'document',
+  Image = 'image',
+  Video = 'video',
 
   // Specifics
   LineBreak = 'line-break',
@@ -128,30 +129,37 @@ export interface MarkdownRulerNode { type: BlockType.Ruler }
 export interface MarkdownLinkNode {
   type: InlineType.Link,
   href: string,
-  content: string
+  label: string
 }
 
 export interface MarkdownAnchorNode {
   type: InlineType.Anchor,
   anchor: string,
-  content: string
+  label: string
 }
 
 export interface MarkdownDocumentNode {
   type: InlineType.Document,
   category: string | null,
   document: string,
-  content: string
+  label: string
 }
 
 export interface MarkdownImageNode {
   type: InlineType.Image,
   alt: string,
-  content: string
+  src: string
+}
+
+export interface MarkdownVideoNode {
+  type: InlineType.Video,
+  kind: 'media' | 'youtube',
+  src: string
 }
 
 export type MarkdownNode = MarkdownSimpleNode | MarkdownCommentNode | MarkdownHeadingNode |
   MarkdownNoteNode | MarkdownCodeNode | MarkdownListNode | MarkdownHttpNode | MarkdownHttpItemNode |
-  MarkdownTableNode | MarkdownRulerNode | MarkdownLinkNode | MarkdownAnchorNode | MarkdownDocumentNode
+  MarkdownTableNode | MarkdownRulerNode | MarkdownLinkNode | MarkdownAnchorNode | MarkdownDocumentNode |
+  MarkdownImageNode | MarkdownVideoNode
 
 export type MarkdownAstTree = MarkdownNode[]

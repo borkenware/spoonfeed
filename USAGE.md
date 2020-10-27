@@ -36,6 +36,14 @@ They are achieved by using a block quote which has on its first line either `inf
 > This is an informative alert box
 ```
 
+### Videos
+Spoonfeed lets you import videos, either using plain media files, or YouTube videos.
+
+```
+!!v[https://www.youtube.com/watch?v=Tt7bzxurJ1I]
+!!v[/videos/test.mp4]
+```
+
 ### H6 Headings
 Spoonfeed uses H6 headings as table and code blocks headers rather than the unused h6 block. We strongly recommend
 labelling all your tables & code blocks with them.
