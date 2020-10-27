@@ -25,27 +25,201 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export enum MarkdownType {
+import {
+  BlockType, RawMarkdownNode, MarkdownNode,
+  MarkdownCommentNode, MarkdownHeadingNode,
+  MarkdownSimpleNode, MarkdownNoteNode, MarkdownAstTree,
+  MarkdownListNode, InlineType, MarkdownHttpNode,
+  MarkdownHttpItemNode, MarkdownCodeNode, MarkdownTableNode
+} from './types'
 
+import { parseBlocks } from './util'
+import parseInline from './inline'
+
+function findTables (markdown: string) {
+  const matches = markdown.matchAll(/^(?:\|[^|\n]+)+\|\n(?:\|(?::-{2,}:|-{2,}))+\|\n(?:(?:\|[^|\n]+)+\|(?:\n|$))+/img)
+  const filtered = []
+  for (const match of matches) {
+    const pipes = match[0].split('\n').map(l => l.match(/(?<!\\)\|/g)!!.length)
+    if (pipes.every(p => pipes[0] === p)) filtered.push(match)
+  }
+  return filtered
 }
 
-export type MarkdownAstTree = MarkdownToken[]
-export type MarkdownToken = MarkdownSimpleToken[] | MarkdownSimpleToken | string
-export interface MarkdownSimpleToken {
-  type: MarkdownType
-  contents: MarkdownToken
+const BlockRuleSet = [
+  { regexp: /<!--(?:.|\n)*?-->/img, type: BlockType.Comment },
+  { regexp: /^#{1,6} [^\n]+/img, type: BlockType.Heading },
+  { regexp: /^[^\n]+\n[=-]{2,}/img, type: BlockType.Heading },
+  { regexp: /^(?:>(?:info|warn|danger))\n(?:(?<!\\)> [^\n]*(?:\n|$))+/img, type: BlockType.Note },
+  { regexp: /^(?:> [^\n]*(?:\n|$))+/img, type: BlockType.Quote },
+  { regexp: /^```[^\n]*\n(?:.|\n)+?\n```/img, type: BlockType.Code },
+  { regexp: /(?:^ *(?<!\\)(?:[-+*]|\d\.) [^\n]+(?:\n|$))+/img, type: BlockType.List, noTrim: true },
+  { regexp: findTables, type: BlockType.Table },
+  { regexp: /^(?:%% (?:GET|POST|PUT|PATCH|DELETE|HEAD) [^\n]+$)/img, type: BlockType.Http },
+  { regexp: /^(?:\*{3,}|-{3,}|_{3,})$/img, type: BlockType.Ruler },
+  { regexp: /^(?:[^\n]+(?:\n|$))+/img, type: BlockType.Paragraph }
+]
+
+function parseComment (node: RawMarkdownNode): MarkdownCommentNode {
+  const content = node.content as string
+  return {
+    type: BlockType.Comment,
+    content: content.replace(/(<!--|-->)/g, '').split('\n').map(s => s.trim()).join('\n')
+  }
 }
 
-export interface MarkdownNoteToken extends MarkdownSimpleToken {
-  type: 0
-  kind: 'info' | 'warn' | 'danger'
+function parseHeader (node: RawMarkdownNode): MarkdownHeadingNode {
+  const content = node.content as string
+  if (content.startsWith('#')) {
+    const [ h, ...title ] = content.split(' ')
+    return {
+      type: BlockType.Heading,
+      level: h.length,
+      content: parseInline(title.join(' '))
+    }
+  }
+
+  return {
+    type: BlockType.Heading,
+    level: content.endsWith('=') ? 1 : 2,
+    content: parseInline(content.split('\n')[0])
+  }
 }
 
-export interface MarkdownCodeToken extends MarkdownSimpleToken {
-  type: 0
-  language: string
+function parseParagraph (node: RawMarkdownNode): MarkdownSimpleNode {
+  const content = node.content as string
+  return {
+    type: BlockType.Paragraph,
+    content: parseInline(content)
+  }
 }
 
-export function parseMarkdown (markdown: string): MarkdownAstTree {
-  return []
+function parseNote (node: RawMarkdownNode): MarkdownNoteNode {
+  const content = node.content as string
+  let [ kind, ...inner ] = content.split('\n')
+  return {
+    type: BlockType.Note,
+    kind: kind.slice(1) as 'info' | 'warn' | 'danger',
+    content: parse(inner.map(l => l.slice(2)).join('\n'))
+  }
 }
+
+function parseQuote (node: RawMarkdownNode): MarkdownSimpleNode {
+  const content = node.content as string
+  return {
+    type: BlockType.Quote,
+    content: parse(content.split('\n').map(l => l.slice(2)).join('\n'))
+  }
+}
+
+function parseList (node: RawMarkdownNode): MarkdownListNode {
+  return doParseList(node.content as string)
+}
+
+function doParseList (list: string): MarkdownListNode {
+  const rawItems = list.split('\n').filter(Boolean)
+  const content: (MarkdownListNode | MarkdownSimpleNode)[] = []
+  const baseTab = rawItems[0].match(/^ +/)!![0].length
+  let accumulating = false
+  let buffer: string[] = []
+
+  for (const item of rawItems) {
+    const tab = item.match(/^ +/)!![0].length
+    if (accumulating && tab === baseTab) {
+      content.push(doParseList(buffer.join('\n')))
+      accumulating = false
+      buffer = []
+    } else if (!accumulating && tab > baseTab) {
+      accumulating = true
+    }
+
+    if (accumulating) buffer.push(item)
+    else content.push({ type: BlockType.ListItem, content: parseInline(item.trim().slice(2).trim()) })
+  }
+
+  return {
+    type: BlockType.List,
+    ordered: !!list.match(/^ +\d/),
+    content
+  }
+}
+
+function parseHttp (node: RawMarkdownNode): MarkdownHttpNode {
+  const content = node.content as string
+  const route: MarkdownHttpItemNode[] = []
+  const [ , method, rawPath ] = content.match(/^%% (GET|POST|PUT|PATCH|DELETE|HEAD) ([^\n]+)/)!!
+  route.push({ type: InlineType.HttpMethod, content: method })
+  for (const match of rawPath.matchAll(/([^{]+)({[^}]+})?/g)) {
+    route.push({ type: InlineType.Text, content: match[1] })
+    if (match[2]) route.push({ type: InlineType.HttpParam, content: match[2] })
+  }
+
+  return {
+    type: BlockType.Http,
+    content: route
+  }
+}
+
+function parseCode (node: RawMarkdownNode): MarkdownCodeNode {
+  const content = node.content as string
+  const [ , lang, code ] = content.match(/^```([^\n]*)\n(.*)\n```$/i)!!
+  return {
+    type: BlockType.Code,
+    language: lang || null,
+    content: code
+  }
+}
+
+function parseTable (node: RawMarkdownNode): MarkdownTableNode {
+  const content = node.content as string
+  const [ head, align, ...rows ] = content.split('\n').filter(Boolean)
+  return {
+    type: BlockType.Table,
+    centered: align.split('|').slice(1, -1).map(s => s.includes(':')),
+    thead: head.split('|').slice(1, -1).map(s => parseInline(s.trim())),
+    tbody: rows.map(row => row.split('|').slice(1, -1).map(s => parseInline(s.trim())))
+  }
+}
+
+function formatBlock (node: RawMarkdownNode): MarkdownNode | null {
+  switch (node.type) {
+    case BlockType.Comment:
+      return parseComment(node)
+    case BlockType.Heading:
+      return parseHeader(node)
+    case BlockType.Paragraph:
+      return parseParagraph(node)
+    case BlockType.Note:
+      return parseNote(node)
+    case BlockType.Quote:
+      return parseQuote(node)
+    case BlockType.List:
+      return parseList(node)
+    case BlockType.Http:
+      return parseHttp(node)
+    case BlockType.Code:
+      return parseCode(node)
+    case BlockType.Table:
+      return parseTable(node)
+    case BlockType.Ruler:
+      return { type: BlockType.Ruler }
+    default:
+      throw new Error('Illegal node type encountered: ' + node.type)
+  }
+}
+
+function formatBlocks (blocks: RawMarkdownNode[]): MarkdownNode[] {
+  return blocks.map(formatBlock) as MarkdownNode[]
+}
+
+export default function parse (markdown: string): MarkdownAstTree {
+  return formatBlocks(parseBlocks(BlockRuleSet, markdown))
+}
+
+const start = process.hrtime.bigint();
+const res = parse('# List test\nThis is a test to see how lists behave. Let\'s hope it goes according to plan!\n\n - aaaaa\n - bbbbb\n - ccccc\n    - dddddd\n    - eeeeee\n - ffffff\n\n%% GET /test/path/{param}/yes\n\n```js\nconsole.log("owo")\n```\n\n```\nyes?\n```\n\n| a | b | c |\n|--|:--:|--|\n| d | e | f |')
+const end = process.hrtime.bigint();
+console.log(`${Math.round(Number(end - start) / 1e3).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} µs`);
+console.log(res)
+
+require('fs').writeFileSync('out.json', JSON.stringify(res, null, 2))

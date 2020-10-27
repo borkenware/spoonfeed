@@ -2,7 +2,14 @@
 
 ## Writing markdown
 Spoonfeed uses a markdown superset to give more possibility to documentation writers. This superset has been designed
-to be easy to read for people reading the markdown files and to not be ugly.
+to be easy to read for people reading the plain markdown files, while giving more possibilities.
+
+We use a completely custom parser, so it may or may not comply with the Markdown standard at 100%. We strongly
+recommend following all the best practices to avoid parsing issues (and it'll even be beneficial for you!).
+
+### Underline
+Our markdown superset supports underlining using a "semi-standard" syntax used in a lot of existing superset:
+`__Underlined content__`.
 
 ### Document Linking
 TBD
@@ -32,6 +39,11 @@ should by convention exclude base path for readability). Route parameters must b
 ```
 %% POST /test/path/{parameter}/yes
 ```
+
+### Codeblocks
+Spoonfeed runs syntax highlighting using [shiki](https://shiki.matsu.io/) to give some color:tm: to your code.
+It also shows line numbers for easier readability and referencing (Who wants to count lines to understand what that
+person meant by "look line 69"?).
 
 ## Building the Web interface
 Spoonfeed outputs a bundled [Preact](https://preactjs.com) application, and uses [Rollup](http://rollupjs.org)

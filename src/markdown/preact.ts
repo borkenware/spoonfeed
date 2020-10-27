@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { MarkdownAstTree } from './parser'
+import { MarkdownAstTree } from './types'
 
 interface PreactNode {
   tag: string
