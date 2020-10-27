@@ -181,7 +181,7 @@ function parseTable (node: RawMarkdownNode): MarkdownTableNode {
   }
 }
 
-function formatBlock (node: RawMarkdownNode): MarkdownNode | null {
+function formatBlock (node: RawMarkdownNode): MarkdownNode {
   switch (node.type) {
     case BlockType.Comment:
       return parseComment(node)
@@ -215,11 +215,3 @@ function formatBlocks (blocks: RawMarkdownNode[]): MarkdownNode[] {
 export default function parse (markdown: string): MarkdownAstTree {
   return formatBlocks(parseBlocks(BlockRuleSet, markdown))
 }
-
-const start = process.hrtime.bigint();
-const res = parse('# List test\nThis is a test to see how lists behave. Let\'s hope it goes according to plan!\n\n - aaaaa\n - bbbbb\n - ccccc\n    - dddddd\n    - eeeeee\n - ffffff\n\n%% GET /test/path/{param}/yes\n\n```js\nconsole.log("owo")\n```\n\n```\nyes?\n```\n\n| a | b | c |\n|--|:--:|--|\n| d | e | f |')
-const end = process.hrtime.bigint();
-console.log(`${Math.round(Number(end - start) / 1e3).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} µs`);
-console.log(res)
-
-require('fs').writeFileSync('out.json', JSON.stringify(res, null, 2))
