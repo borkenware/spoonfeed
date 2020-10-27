@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { MarkdownType, RawMarkdownNode, InlineType } from './types';
+import { MarkdownType, RawMarkdownNode } from './types';
 
 export interface ParserRule {
   regexp: RegExp | ((markdown: string) => Record<string | number, any>[])
@@ -90,7 +90,7 @@ export function parseInline (ruleset: ParserRule[], markdown: string): RawMarkdo
     if (match.start < cursor) continue
     if (match.start - cursor > 0) {
       res.push({
-        type: InlineType.Text,
+        type: MarkdownType.Text,
         content: markdown.slice(cursor, match.start).replace(/\n/g, ' ')
       })
     }
@@ -104,7 +104,7 @@ export function parseInline (ruleset: ParserRule[], markdown: string): RawMarkdo
 
   if (cursor < markdown.length) {
     res.push({
-      type: InlineType.Text,
+      type: MarkdownType.Text,
       content: markdown.slice(cursor).replace(/\n/g, ' ')
     })
   }

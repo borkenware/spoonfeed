@@ -25,21 +25,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export enum BlockType {
+export enum MarkdownType {
+  // Blocks
   Comment = 'comment',
   Heading = 'heading',
   Paragraph = 'paragraph',
   Quote = 'quote',
   Note = 'note',
-  Code = 'code',
+  CodeBlock = 'code',
   List = 'list',
   ListItem = 'list-item',
   Http = 'http',
   Table = 'table',
-  Ruler = 'ruler'
-}
+  Ruler = 'ruler',
 
-export enum InlineType {
+  // Inline
   Text = 'text',
   Bold = 'bold',
   Italic = 'italic',
@@ -59,12 +59,6 @@ export enum InlineType {
   HttpParam = 'http-param'
 }
 
-export interface CodeToken {
-  color: number | null
-  content: string
-}
-
-export type MarkdownType = BlockType | InlineType
 export type MarkdownRawItem = RawMarkdownNode[] | RawMarkdownNode | string
 export type MarkdownItem = MarkdownNode[] | MarkdownNode | string
 
@@ -74,92 +68,94 @@ export interface RawMarkdownNode {
 }
 
 export interface MarkdownSimpleNode {
-  type: BlockType.Paragraph | BlockType.Quote | BlockType.ListItem | InlineType
+  type: MarkdownType.Paragraph | MarkdownType.Quote | MarkdownType.ListItem | MarkdownType.Text |
+    MarkdownType.Bold | MarkdownType.Italic | MarkdownType.Underline | MarkdownType.StrikeThrough |
+    MarkdownType.Code | MarkdownType.Email | MarkdownType.HttpMethod | MarkdownType.HttpParam
   content: MarkdownItem
 }
 
+export interface MarkdownEmptyNode { type: MarkdownType.Ruler | MarkdownType.LineBreak }
+
 export interface MarkdownCommentNode {
-  type: BlockType.Comment
+  type: MarkdownType.Comment
   content: string
 }
 
 export interface MarkdownHeadingNode {
-  type: BlockType.Heading
+  type: MarkdownType.Heading
   level: number
   content: MarkdownItem
 }
 
 export interface MarkdownNoteNode {
-  type: BlockType.Note
+  type: MarkdownType.Note
   kind: 'info' | 'warn' | 'danger'
   content: MarkdownItem
 }
 
 export interface MarkdownCodeNode {
-  type: BlockType.Code
+  type: MarkdownType.Code
   language: string | null
   content: string
 }
 
 export interface MarkdownListNode {
-  type: BlockType.List
+  type: MarkdownType.List
   ordered: boolean
   content: (MarkdownListNode | MarkdownSimpleNode)[]
 }
 
 export interface MarkdownHttpNode {
-  type: BlockType.Http
+  type: MarkdownType.Http
   content: MarkdownHttpItemNode[]
 }
 
 export interface MarkdownHttpItemNode {
-  type: InlineType.HttpMethod | InlineType.HttpParam | InlineType.Text
+  type: MarkdownType.HttpMethod | MarkdownType.HttpParam | MarkdownType.Text
   content: string
 }
 
 export interface MarkdownTableNode {
-  type: BlockType.Table
+  type: MarkdownType.Table
   centered: boolean[]
   thead: MarkdownItem[]
   tbody: MarkdownItem[][]
 }
 
-export interface MarkdownRulerNode { type: BlockType.Ruler }
-
 export interface MarkdownLinkNode {
-  type: InlineType.Link,
+  type: MarkdownType.Link,
   href: string,
   label: string
 }
 
 export interface MarkdownAnchorNode {
-  type: InlineType.Anchor,
+  type: MarkdownType.Anchor,
   anchor: string,
   label: string
 }
 
 export interface MarkdownDocumentNode {
-  type: InlineType.Document,
+  type: MarkdownType.Document,
   category: string | null,
   document: string,
   label: string
 }
 
 export interface MarkdownImageNode {
-  type: InlineType.Image,
+  type: MarkdownType.Image,
   alt: string,
   src: string
 }
 
 export interface MarkdownVideoNode {
-  type: InlineType.Video,
+  type: MarkdownType.Video,
   kind: 'media' | 'youtube',
   src: string
 }
 
-export type MarkdownNode = MarkdownSimpleNode | MarkdownCommentNode | MarkdownHeadingNode |
+export type MarkdownNode = MarkdownSimpleNode | MarkdownEmptyNode | MarkdownCommentNode | MarkdownHeadingNode |
   MarkdownNoteNode | MarkdownCodeNode | MarkdownListNode | MarkdownHttpNode | MarkdownHttpItemNode |
-  MarkdownTableNode | MarkdownRulerNode | MarkdownLinkNode | MarkdownAnchorNode | MarkdownDocumentNode |
+  MarkdownTableNode | MarkdownLinkNode | MarkdownAnchorNode | MarkdownDocumentNode |
   MarkdownImageNode | MarkdownVideoNode
 
 export type MarkdownAstTree = MarkdownNode[]

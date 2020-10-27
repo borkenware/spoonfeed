@@ -26,9 +26,9 @@
  */
 
 import {
-  InlineType, MarkdownAstTree, RawMarkdownNode,
+  MarkdownType, MarkdownAstTree, RawMarkdownNode,
   MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
-  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode, BlockType
+  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode
 } from './types'
 
 import { parseInline } from './util'
@@ -37,27 +37,26 @@ const LINK_PATH = '((\\/[\\+~%\\/\\.\\w\\-_]*)?\\??([\\-\\+=&;%@\\.\\w_]*)#?([\\
 const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?([a-z0-9\\.\\-]+|(www\\.|[\\-;:&=\\+\\$,\\w]+@)[a-z0-9\\.\\-]+))${LINK_PATH}?)`
 const EMAIL = '(?:(?:[^<>()[]\\.,;:s@"]+(?:.[^<>()[]\\.,;:s@"]+)*)|(?:".+"))@(?:(?:[[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}])|(?:(?:[a-z-0-9]+.)+[a-z]{2,}))'
 
-const LINK_RE = new RegExp(LINK, 'i')
 const YT_RE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/i
 
 const InlineRuleSet = [
-  { regexp: /(?:(?<!\\)\*){2}(.+?)(?:(?<!\\)\*){2}(?!\*)/img, type: InlineType.Bold, recurse: true, extract: 1 },
-  { regexp: /(?:(?<!\\)_){2}(.+?)(?:(?<!\\)_){2}(?!_)/img, type: InlineType.Underline, recurse: true, extract: 1 },
-  { regexp: /(?:(?<!\\)(\*|_))(.+?)(?:(?<!\\)\1)(?!\1)/img, type: InlineType.Italic, recurse: true, extract: 2 },
-  { regexp: /(?:(?<!\\)~){2}(.+?)(?:(?<!\\)~){2}(?!~)/img, type: InlineType.StrikeThrough, recurse: true, extract: 1 },
-  { regexp: /(?:(?<!\\)\`)(.+?)(?:(?<!\\)`)(?!`)/img, type: InlineType.Code, extract: 1 },
-  { regexp: /(?<!\\)<br\/?>/img, type: InlineType.LineBreak },
+  { regexp: /(?:(?<!\\)\*){2}(.+?)(?:(?<!\\)\*){2}(?!\*)/img, type: MarkdownType.Bold, recurse: true, extract: 1 },
+  { regexp: /(?:(?<!\\)_){2}(.+?)(?:(?<!\\)_){2}(?!_)/img, type: MarkdownType.Underline, recurse: true, extract: 1 },
+  { regexp: /(?:(?<!\\)(\*|_))(.+?)(?:(?<!\\)\1)(?!\1)/img, type: MarkdownType.Italic, recurse: true, extract: 2 },
+  { regexp: /(?:(?<!\\)~){2}(.+?)(?:(?<!\\)~){2}(?!~)/img, type: MarkdownType.StrikeThrough, recurse: true, extract: 1 },
+  { regexp: /(?:(?<!\\)\`)(.+?)(?:(?<!\\)`)(?!`)/img, type: MarkdownType.Code, extract: 1 },
+  { regexp: /(?<!\\)<br\/?>/img, type: MarkdownType.LineBreak },
 
-  { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: InlineType.Image },
-  { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Image },
-  { regexp: new RegExp(`!!v\\[${LINK}]`, 'img'), type: InlineType.Video },
-  { regexp: new RegExp(`!!v\\[${LINK_PATH}]`, 'img'), type: InlineType.Video },
-  { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: InlineType.Link },
-  { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: InlineType.Link },
-  { regexp: /\[(?:[^\]]|\\])+]\(##[a-z-/]+\)/img, type: InlineType.Document },
-  { regexp: /\[(?:[^\]]|\\])+]\(#[a-z-]+\)/img, type: InlineType.Anchor },
-  { regexp: new RegExp(LINK, 'img'), type: InlineType.Link },
-  { regexp: new RegExp(EMAIL, 'img'), type: InlineType.Email }
+  { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: MarkdownType.Image },
+  { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: MarkdownType.Image },
+  { regexp: new RegExp(`!!v\\[${LINK}]`, 'img'), type: MarkdownType.Video },
+  { regexp: new RegExp(`!!v\\[${LINK_PATH}]`, 'img'), type: MarkdownType.Video },
+  { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: MarkdownType.Link },
+  { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: MarkdownType.Link },
+  { regexp: /\[(?:[^\]]|\\])+]\(##[a-z-/]+\)/img, type: MarkdownType.Document },
+  { regexp: /\[(?:[^\]]|\\])+]\(#[a-z-]+\)/img, type: MarkdownType.Anchor },
+  { regexp: new RegExp(LINK, 'img'), type: MarkdownType.Link },
+  { regexp: new RegExp(EMAIL, 'img'), type: MarkdownType.Email }
 ]
 
 function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNode {
@@ -66,20 +65,20 @@ function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNod
     const [ , label, href ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
     if (href.startsWith('#')) {
       return {
-        type: InlineType.Anchor,
+        type: MarkdownType.Anchor,
         anchor: href,
         label
       }
     }
     return {
-      type: InlineType.Link,
+      type: MarkdownType.Link,
       href: href,
       label
     }
   }
 
   return {
-    type: InlineType.Link,
+    type: MarkdownType.Link,
     href: content,
     label: content
   }
@@ -89,7 +88,7 @@ function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
   const content = node.content as string
   const [ , label, category, document ] = content.match(/\[(.+?(?<!\\))]\(##([^\/]+)(?:\/(.+))?\)/i)!!
   return {
-    type: InlineType.Document,
+    type: MarkdownType.Document,
     category: document ? category : null,
     document: document ? document : category,
     label
@@ -100,7 +99,7 @@ function parseImage (node: RawMarkdownNode): MarkdownImageNode {
   const content = node.content as string
   const [ , label, src ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
   return {
-    type: InlineType.Image,
+    type: MarkdownType.Image,
     alt: label,
     src
   }
@@ -111,14 +110,14 @@ function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
   if (YT_RE.test(content)) {
     const [ ,,,,, id ] = content.match(YT_RE)!!
     return {
-      type: InlineType.Video,
+      type: MarkdownType.Video,
       kind: 'youtube',
       src: id
     }
   }
 
   return {
-    type: InlineType.Video,
+    type: MarkdownType.Video,
     kind: 'media',
     src: content
   }
@@ -126,14 +125,14 @@ function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
 
 function formatBlock (block: RawMarkdownNode): MarkdownNode {
   switch (block.type) {
-    case InlineType.Link:
-    case InlineType.Anchor:
+    case MarkdownType.Link:
+    case MarkdownType.Anchor:
       return parseLink(block)
-    case InlineType.Document:
+    case MarkdownType.Document:
       return parseDocument(block)
-    case InlineType.Image:
+    case MarkdownType.Image:
       return parseImage(block)
-    case InlineType.Video:
+    case MarkdownType.Video:
       return parseVideo(block)
   }
 
