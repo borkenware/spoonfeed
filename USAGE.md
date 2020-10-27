@@ -54,6 +54,19 @@ Spoonfeed runs syntax highlighting using [shiki](https://shiki.matsu.io/) to giv
 It also shows line numbers for easier readability and referencing (Who wants to count lines to understand what that
 person meant by "look line 69"?).
 
+### Local resources
+When embedding let's say images, it's rare to have them already hosted and you most likely have them next to
+your documents. When embedding a resource, if Spoonfeed detects it's a resource on the filesystem, it'll import
+it, optimize the resource and save it to the build folder.
+
+Spoonfeed considers (by default, this is configurable) that all the assets will be in `<workdir>/assets`. For example,
+let's take the following image declaration:
+```md
+![My Beautiful Cat](/photos/cat.jpg)
+```
+Spoonfeed will try to import the file `<workdir>/assets/photos/cat.jpg`, and do all the required magic in background.
+If the file is not found, an error will be thrown.
+
 ## Building the Web interface
 Spoonfeed outputs a bundled [Preact](https://preactjs.com) application, and uses [Rollup](http://rollupjs.org)
 internally for bundling.

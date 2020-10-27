@@ -19,15 +19,18 @@ module.exports = {
 Note: Paths are relative to the config file.
 
 ## Configuring documents source
-- `documents.source` - string (default: `'filesystem'`)<br>
-The document source to use. Spoonfeed supports two document sources: `filesystem` and `registry`.
-
 Documents can be part of a category, although Spoonfeed doesn't support subcategories. Document without categories
 will always be shown at the top of the list.
 
 No matter the source you're pulling from, documents name and slug will be determined by the first Heading 1 encountered.
 
-### Filesystem document source
+- `documents.source` - string (default: `'filesystem'`)<br>
+The document source to use. Spoonfeed supports two document sources: `filesystem` and `registry`.
+
+- `documents.assets` - string (default: `'assets'`)<br>
+Folder where documents are located, relative to the config file.
+
+### Filesystem document source settings
 This is the default document source used by Spoonfeed. The specified folder will be scanned and the document tree
 will be built from this. You can force file sorting by prepending `[int]-` to the filename, it'll only be used for
 sorting and will then be stripped.
@@ -44,9 +47,9 @@ the Preact component rendering time. Slug cannot be set.
 ```
 
 - `documents.path` - string (default: `'docs'`)<br>
-Folder where documents are located.
+Folder where documents are located, relative to the config file.
 
-### Registry document source
+### Registry document source settings
 TBD
 
 ## Basic UI settings
