@@ -34,8 +34,8 @@ import {
 import { parseInline } from './util'
 
 const LINK_PATH = '((\\/[\\+~%\\/\\.\\w\\-_]*)?\\??([\\-\\+=&;%@\\.\\w_]*)#?([\\.\\!\\/\\\\\\w]*))'
-const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?([a-z0-9\\.\\-]+|(www\\.|[\\-;:&=\\+\\$,\\w]+@)[a-z0-9\\.\\-]+))${LINK_PATH}?)`
-const EMAIL = '(?:(?:[^<>()[]\\.,;:s@"]+(?:.[^<>()[]\\.,;:s@"]+)*)|(?:".+"))@(?:(?:[[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}])|(?:(?:[a-z-0-9]+.)+[a-z]{2,}))'
+const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?[a-z0-9\\.\\-]+|(www\\.|[\\-;:&=\\+\\$,\\w]+@)[a-z0-9\\.\\-]+)${LINK_PATH}?)`
+const EMAIL = '(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))'
 
 const YT_RE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/i
 
@@ -53,10 +53,10 @@ const InlineRuleSet = [
   { regexp: new RegExp(`!!v\\[${LINK_PATH}]`, 'img'), type: MarkdownType.Video },
   { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: MarkdownType.Link },
   { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: MarkdownType.Link },
-  { regexp: /\[(?:[^\]]|\\])+]\(##[a-z-/]+\)/img, type: MarkdownType.Document },
-  { regexp: /\[(?:[^\]]|\\])+]\(#[a-z-]+\)/img, type: MarkdownType.Anchor },
-  { regexp: new RegExp(LINK, 'img'), type: MarkdownType.Link },
-  { regexp: new RegExp(EMAIL, 'img'), type: MarkdownType.Email }
+  { regexp: /\[(?:[^\]]|\\])+]\(##[\.\!\/\\\w]*(\/[\.\!\/\\\w]*)?(#[\.\!\/\\\w]*)?\)/img, type: MarkdownType.Document },
+  { regexp: /\[(?:[^\]]|\\])+]\(#[\.\!\/\\\w]*\)/img, type: MarkdownType.Anchor },
+  { regexp: new RegExp(EMAIL, 'img'), type: MarkdownType.Email },
+  { regexp: new RegExp(LINK, 'img'), type: MarkdownType.Link }
 ]
 
 function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNode {
@@ -67,13 +67,14 @@ function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNod
       return {
         type: MarkdownType.Anchor,
         anchor: href,
-        label
+        label: parse(label)
       }
     }
+
     return {
       type: MarkdownType.Link,
       href: href,
-      label
+      label: parse(label)
     }
   }
 
@@ -86,12 +87,13 @@ function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNod
 
 function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
   const content = node.content as string
-  const [ , label, category, document ] = content.match(/\[(.+?(?<!\\))]\(##([^\/]+)(?:\/(.+))?\)/i)!!
+  const [ , label, category, document, anchor ] = content.match(/\[((?:[^\]]|\\])+)]\(##([\.\!\\\w]*)(?:\/([\.\!\\\w]*))?(#[\.\!\/\\\w]*)?\)/i)!!
   return {
     type: MarkdownType.Document,
     category: document ? category : null,
     document: document ? document : category,
-    label
+    anchor: anchor || null,
+    label: parse(label)
   }
 }
 

@@ -21,6 +21,9 @@ Categorized document:
 
 Final link:
 [Look this document](##important/information)
+
+With an anchor:
+[Look this document](##important/information#legal)
 ```
 
 The document file name must not include the sorting prefix (`<int>-`), and the link will not be parsed if the document
@@ -37,7 +40,8 @@ They are achieved by using a block quote which has on its first line either `inf
 ```
 
 ### Videos
-Spoonfeed lets you import videos, either using plain media files, or YouTube videos.
+Spoonfeed lets you import videos, either using plain media files, or YouTube videos. This can be useful to showcase
+something depending on what you're documenting.
 
 ```
 !!v[https://www.youtube.com/watch?v=Tt7bzxurJ1I]

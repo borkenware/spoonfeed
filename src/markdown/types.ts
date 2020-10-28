@@ -32,7 +32,7 @@ export enum MarkdownType {
   Paragraph = 'paragraph',
   Quote = 'quote',
   Note = 'note',
-  CodeBlock = 'code',
+  CodeBlock = 'code-block',
   List = 'list',
   ListItem = 'list-item',
   Http = 'http',
@@ -48,7 +48,7 @@ export enum MarkdownType {
   Code = 'code',
   Link = 'link',
   Email = 'email',
-  Anchor = 'anchor', 
+  Anchor = 'anchor',
   Document = 'document',
   Image = 'image',
   Video = 'video',
@@ -63,7 +63,7 @@ export type MarkdownRawItem = RawMarkdownNode[] | RawMarkdownNode | string
 export type MarkdownItem = MarkdownNode[] | MarkdownNode | string
 
 export interface RawMarkdownNode {
-  type: MarkdownType,
+  type: MarkdownType
   content: MarkdownRawItem
 }
 
@@ -94,7 +94,7 @@ export interface MarkdownNoteNode {
 }
 
 export interface MarkdownCodeNode {
-  type: MarkdownType.Code
+  type: MarkdownType.CodeBlock
   language: string | null
   content: string
 }
@@ -123,33 +123,34 @@ export interface MarkdownTableNode {
 }
 
 export interface MarkdownLinkNode {
-  type: MarkdownType.Link,
-  href: string,
-  label: string
+  type: MarkdownType.Link
+  href: string
+  label: MarkdownItem
 }
 
 export interface MarkdownAnchorNode {
-  type: MarkdownType.Anchor,
-  anchor: string,
-  label: string
+  type: MarkdownType.Anchor
+  anchor: string
+  label: MarkdownItem
 }
 
 export interface MarkdownDocumentNode {
-  type: MarkdownType.Document,
-  category: string | null,
-  document: string,
-  label: string
+  type: MarkdownType.Document
+  category: string | null
+  document: string
+  anchor: string | null
+  label: MarkdownItem
 }
 
 export interface MarkdownImageNode {
-  type: MarkdownType.Image,
-  alt: string,
+  type: MarkdownType.Image
+  alt: string
   src: string
 }
 
 export interface MarkdownVideoNode {
-  type: MarkdownType.Video,
-  kind: 'media' | 'youtube',
+  type: MarkdownType.Video
+  kind: 'media' | 'youtube'
   src: string
 }
 
