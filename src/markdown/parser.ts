@@ -203,8 +203,7 @@ function formatBlock (node: RawMarkdownNode): MarkdownNode {
       return parseTable(node)
     case MarkdownType.Ruler:
       return { type: MarkdownType.Ruler }
-    case MarkdownType.LineBreak:
-      return { type: MarkdownType.LineBreak }
+    /* istanbul ignore next */
     default:
       throw new Error('Illegal node type encountered: ' + node.type)
   }

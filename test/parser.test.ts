@@ -35,6 +35,13 @@ import {
 } from '../src/markdown/types'
 
 describe('markdown document sections', function () {
+  test('comments', function () {
+    const res = parse('<!-- this is a comment -->')
+    expect(res.length).toBe(1)
+    expect(res[0].type).toBe('comment')
+    expect((res[0] as any).content).toBe('this is a comment')
+  })
+
   test('heading blocks (classic syntax)', function () {
     const res = parse('# Title\nThis is some text\n\n## Subtitle')
     expect(res.length).toBe(3)

@@ -27,15 +27,21 @@
 
 import { MarkdownType, RawMarkdownNode } from './types';
 
-export interface ParserRule {
+export interface ParserBlockRule {
   regexp: RegExp | ((markdown: string) => Record<string | number, any>[])
+  type: MarkdownType
+  noTrim?: boolean
+}
+
+export interface ParserInlineRule {
+  regexp: RegExp
   type: MarkdownType
   noTrim?: boolean
   recurse?: boolean
   extract?: number
 }
 
-export function parseBlocks (ruleset: ParserRule[], markdown: string): RawMarkdownNode[] {
+export function parseBlocks (ruleset: ParserBlockRule[], markdown: string): RawMarkdownNode[] {
   const buffer: any[] = [ markdown ]
 
   for (const rule of ruleset) {
@@ -49,10 +55,9 @@ export function parseBlocks (ruleset: ParserRule[], markdown: string): RawMarkdo
 
         const before = buffer[i].slice(0, index)
         const after = buffer[i].slice(index + match[0].length)
-        const str = match[rule.extract || 0]
         const block = {
           type: rule.type,
-          content: rule.noTrim ? str : str.trim()
+          content: rule.noTrim ? match[0] : match[0].trim()
         }
 
         const newItems = [ before, block, after ].filter(Boolean)
@@ -67,15 +72,14 @@ export function parseBlocks (ruleset: ParserRule[], markdown: string): RawMarkdo
   return buffer.filter(e => typeof e !== 'string') as RawMarkdownNode[]
 }
 
-export function parseInline (ruleset: ParserRule[], markdown: string): RawMarkdownNode[] {
+export function parseInline (ruleset: ParserInlineRule[], markdown: string): RawMarkdownNode[] {
   const found: any[] = []
 
   for (const rule of ruleset) {
-    const matches = typeof rule.regexp === 'function' ? rule.regexp(markdown) : markdown.matchAll(rule.regexp)
-    for (const match of matches) {
+    for (const match of markdown.matchAll(rule.regexp)) {
       found.push({
         start: match.index,
-        end: match.index + match[0].length,
+        end: match.index!! + match[0].length,
         string: match[rule.extract || 0],
         type: rule.type,
         recurse: rule.recurse
