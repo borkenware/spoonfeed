@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { MarkdownAstTree } from './types'
+import { MarkdownAstTree } from '../markdown/types'
 
 interface PreactNode {
   tag: string
@@ -40,7 +40,7 @@ function astToNodes (ast: MarkdownAstTree): PreactNode[] {
   return []
 }
 
-export function astToPreact (ast: MarkdownAstTree): string {
+export default function render (ast: MarkdownAstTree): string {
   // return ast |> astToNodes |> nodesToCode - I wish
   return nodesToCode(astToNodes(ast))
 }
