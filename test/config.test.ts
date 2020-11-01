@@ -34,7 +34,19 @@ jest.mock('fs', function () {
       '/test/resolver/case2/package.json': '{}',
       '/test/resolver/case2/spoonfeed.config.js': 'module.exports = {}',
       '/test/resolver/case2/src/owo.js': 'module.exports = "uwu"',
-      '/test/resolver/case3/package.json': '{}'
+      '/test/resolver/case3/package.json': '{}',
+
+      '/test/reader/case1/package.json': '{}',
+      '/test/reader/case1/spoonfeed.config.js': 'module.exports = { ui: { title: "Test docs" } }',
+      '/test/reader/case2/package.json': '{}',
+      '/test/reader/case2/spoonfeed.config.js': 'module.exports = { ui: { title: "Test docs" }',
+      '/test/reader/case3/package.json': '{}',
+      '/test/reader/case3/spoonfeed.config.js': 'const cfg = { ui: { title: "Test docs" } }',
+      '/test/reader/case4/package.json': '{}',
+      '/test/reader/case4/spoonfeed.config.js': 'module.exports = "uwu"',
+      '/test/reader/case5/package.json': '{}',
+      '/test/reader/case5/spoonfeed.config.js': 'module.exports = { ui: { title: false } }',
+      '/test/reader/case6/package.json': '{}'
     })
   )
 
@@ -44,7 +56,8 @@ jest.mock('fs', function () {
 })
 
 import * as fs from 'fs'
-import { findConfig } from '../src/config'
+import readConfig, { findConfig } from '../src/config'
+import validate from '../src/config/validator'
 
 describe('resolver', function () {
   beforeEach(function () {
@@ -66,8 +79,91 @@ describe('resolver', function () {
     expect(res).toBeNull()
     expect(fs.existsSync).toHaveBeenCalledTimes(4)
   })
+
+  test('stops at system root', function () {
+    const res = findConfig('/test/resolver')
+    expect(res).toBeNull()
+    expect(fs.existsSync).toHaveBeenCalledTimes(6)
+  })
 })
 
 describe('validator', function () {
-  // todo
+  let ogCwd = process.cwd
+  afterEach(() => (process.cwd = ogCwd))
+
+  test('doesn\'t reject valid config', function () {
+    expect(function () {
+      validate({
+        documents: { path: 'docs/yes' },
+        ui: { title: 'Test docs', copyright: null },
+        build: { mode: 'preact' },
+        ssr: { generate: true, ssl: { cert: '/ssl.crt', key: '/ssl.key' } }
+      })
+    }).not.toThrow()
+  })
+
+  test('rejects invalid config types', function () {
+    expect(function () {
+      validate({
+        documents: { path: 'docs/yes' },
+        ui: { title: false },
+        ssr: { generate: true }
+      } as any) // as any since we're intentionally breaking types
+    }).toThrow(/invalid field type/i)
+  })
+
+  test('rejects invalid config values', function () {
+    expect(function () {
+      validate({
+        documents: { path: 'docs/yes' },
+        build: { mode: 'magic' },
+        ssr: { generate: true }
+      } as any) // as any since we're intentionally breaking types
+    }).toThrow(/invalid field value/i)
+  })
+
+  test('rejects missing fields', function () {
+    expect(function () {
+      validate({
+        documents: { path: 'docs/yes' },
+        ui: { title: 'Test docs' },
+        ssr: { http2: true }
+      } as any) // as any since we're intentionally breaking types
+    }).toThrow(/missing required field/i)
+  })
+})
+
+describe('reader', function () {
+  let ogCwd = process.cwd
+  afterEach(() => (process.cwd = ogCwd))
+
+  test('reads config normally', function () {
+    process.cwd = () => '/test/reader/case1'
+    expect(readConfig).not.toThrow()
+  })
+
+  test('handles invalid JS in config', function () {
+    process.cwd = () => '/test/reader/case2'
+    expect(readConfig).toThrow(SyntaxError)
+  })
+
+  test('handles no exports', function () {
+    process.cwd = () => '/test/reader/case3'
+    expect(readConfig).toThrow(/no config was exported/i)
+  })
+
+  test('handles invalid exports', function () {
+    process.cwd = () => '/test/reader/case4'
+    expect(readConfig).toThrow(/invalid field type(.*?)for root/i)
+  })
+
+  test('throws on invalid config', function () {
+    process.cwd = () => '/test/reader/case5'
+    expect(readConfig).toThrow()
+  })
+
+  test('allows no config', function () {
+    process.cwd = () => '/test/reader/case6'
+    expect(readConfig).not.toThrow()
+  })
 })

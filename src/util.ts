@@ -25,48 +25,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Module } from 'module'
-import { existsSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
+export type ExtendedType = 'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function' |
+  'array' | 'null' | 'nan'
 
-import { Config } from './types'
-import validate from './validator'
+export function extendedTypeof (obj: any): ExtendedType {
+  let type: ExtendedType = typeof obj
+  if (type === 'object' && Array.isArray(obj)) type = 'array'
+  if (type === 'object' && obj === null) type = 'null'
+  if (type === 'number' && isNaN(obj)) type = 'nan'
 
-export function findConfig (dir: string | null = null): string | null {
-  if (!dir) dir = process.cwd()
-
-  if (existsSync(join(dir, 'spoonfeed.config.js'))) {
-    return join(dir, 'spoonfeed.config.js')
-  }
-
-  if (existsSync(join(dir, 'package.json'))) {
-    return null
-  }
-
-  const next = dirname(dir)
-  if (next === dir) {
-    // We reached system root
-    return null
-  }
-
-  return findConfig(next)
+  return type
 }
 
-export default function readConfig (): Config {
-  const path = findConfig()
-  if (!path) return {}
-
-  let cfg;
-  try {
-    const blob = readFileSync(path, 'utf8')
-    const m: any = new Module('cfg')
-    m._compile(`module.exports = null; ${blob}`, path)
-    cfg = m.exports
-  } catch (e) {
-    throw new SyntaxError(e)
-  }
-
-  if (!cfg) throw new Error('No config was exported')
-  validate(cfg)
-  return cfg
+export function hasOwnProperty<X extends {}, Y extends PropertyKey>(obj: X, prop: Y): obj is X & Record<Y, any> {
+  return Object.prototype.hasOwnProperty.call(obj, prop)
 }

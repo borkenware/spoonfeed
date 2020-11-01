@@ -68,8 +68,8 @@ put `{{ year }}`.<br>
 Logo shown at the top of the documentation. If `null`, the title will be shown in plaintext.
 
 - `ui.favicon` - string? (default: `null`)<br>
-Icon shown in browser's tabs. If a PNG file is provided, it'll be converted to a `.ico` file and the PNG will be used
-for SEO tags. If `null`, no favicon will be set.
+Icon shown in browser's tabs. We recommend a 128x128 PNG file, since this will be used in SEO tags. An ICO file will be
+generated for the actual favicon.
 
 - `ui.acknowledgements` - boolean (default: `true`)<br>
 Whether the "Acknowledgements" page listing dependencies and their license should be generated. This feature ensure

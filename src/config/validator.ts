@@ -25,6 +25,109 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export default function () {
+import { Config } from './types'
+import { hasOwnProperty, extendedTypeof, ExtendedType } from '../util'
 
+interface Schema {
+  [k: string]: SchemaItem
+}
+
+type SchemaItem = SchemaItemType | SchemaItemValues | SchemaItemNested
+
+interface SchemaItemType {
+  required?: boolean | ((cfg: Config | null) => boolean)
+  types: ExtendedType | ExtendedType[]
+}
+
+interface SchemaItemValues {
+  required?: boolean | ((cfg: Config | null) => boolean)
+  values: any[]
+}
+
+interface SchemaItemNested {
+  required?: boolean | ((cfg: Config | null) => boolean)
+  schema: Schema
+}
+
+const schema: Schema = {
+  documents: {
+    schema: {
+      source: { values: [ 'filesystem', 'registry' ] },
+      assets: { types: 'string' },
+      // Filesystem specific
+      path: { types: 'string' }
+      // Registry specific
+    }
+  },
+  ui: {
+    schema: {
+      title: { types: 'string' },
+      description: { types: 'string' },
+      copyright: { types: [ 'string', 'null' ] },
+      logo: { types: [ 'string', 'null' ] },
+      favicon: { types: [ 'string', 'null' ] },
+      acknowledgements: { types: 'boolean' }
+    }
+  },
+  build: {
+    schema: {
+      target: { types: 'string' },
+      mode: { values: [ 'preact' ] },
+      sourcemaps: { types: 'boolean' },
+      optimizeImg: { types: 'boolean' },
+      offline: { types: 'boolean' },
+      mangle: { types: 'boolean' }
+    }
+  },
+  ssr: {
+    schema: {
+      generate: { types: 'boolean' },
+      upgradeInsecure: { types: 'boolean' },
+      http2: { types: 'boolean' },
+      ssl: {
+        required: c => !!c?.ssr?.http2,
+        schema: {
+          cert: { required: true, types: 'string' },
+          key: { required: true, types: 'string' }
+        }
+      }
+    }
+  }
+}
+
+function validateSchema (schema: Schema, object: object, full?: object, prefix: string = '') {
+  const rootType = extendedTypeof(object)
+  if (rootType !== 'object') {
+    throw new TypeError(`Invalid field type: expected object, got ${rootType} for ${prefix || 'root'}`)
+  }
+
+  if (!full) full = object
+  for (const [ key, item ] of Object.entries(schema)) {
+    const required = item.required
+      ? typeof item.required === 'function' ? item.required(full) : item.required
+      : false
+
+    if (hasOwnProperty(object, key)) {
+      /* istanbul ignore else */
+      if (hasOwnProperty(item, 'types')) {
+        const types = Array.isArray(item.types) ? item.types : [ item.types ]
+        const type = extendedTypeof(object[key])
+        if (!types.includes(type)) {
+          throw new TypeError(`Invalid field type: expected ${types.join(' or ')}, got ${type} for ${prefix}${key}`)
+        }
+      } else if (hasOwnProperty(item, 'values')) {
+        if (!item.values.includes(object[key])) {
+          throw new TypeError(`Invalid field value: expected ${item.values.map(s => `"${s}"`).join(' or ')}, got ${object[key]} for ${prefix}${key}`)
+        }
+      } else if (hasOwnProperty(item, 'schema')) {
+        validateSchema(item.schema, object[key], full, `${prefix}${key}.`)
+      }
+    } else if (required) {
+      throw new TypeError(`Missing required field ${prefix}${key}`)
+    }
+  }
+}
+
+export default function validate (config: object) {
+  validateSchema(schema, config)
 }

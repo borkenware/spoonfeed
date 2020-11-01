@@ -25,48 +25,58 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Module } from 'module'
-import { existsSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
-
-import { Config } from './types'
-import validate from './validator'
-
-export function findConfig (dir: string | null = null): string | null {
-  if (!dir) dir = process.cwd()
-
-  if (existsSync(join(dir, 'spoonfeed.config.js'))) {
-    return join(dir, 'spoonfeed.config.js')
-  }
-
-  if (existsSync(join(dir, 'package.json'))) {
-    return null
-  }
-
-  const next = dirname(dir)
-  if (next === dir) {
-    // We reached system root
-    return null
-  }
-
-  return findConfig(next)
+export interface ConfigDocumentsFs {
+  source?: 'filesystem'
+  assets?: string
+  path?: string
 }
 
-export default function readConfig (): Config {
-  const path = findConfig()
-  if (!path) return {}
+export interface ConfigDocumentsRegistry {
+  source?: 'registry'
+  assets?: string
+}
 
-  let cfg;
-  try {
-    const blob = readFileSync(path, 'utf8')
-    const m: any = new Module('cfg')
-    m._compile(`module.exports = null; ${blob}`, path)
-    cfg = m.exports
-  } catch (e) {
-    throw new SyntaxError(e)
+export interface ConfigUi {
+  title?: string
+  description?: string
+  copyright?: string | null
+  logo?: string | null
+  favicon?: string | null
+  acknowledgements?: boolean
+}
+
+export interface ConfigBuild {
+  target?: string
+  mode?: 'preact'
+  sourcemaps?: boolean
+  optimizeImg?: boolean
+  offline?: boolean
+  mangle?: boolean
+}
+
+export interface ConfigSsr {
+  generate?: boolean
+  upgradeInsecure?: boolean
+  http2?: false
+  ssl?: {
+    cert: string
+    key: string
   }
+}
 
-  if (!cfg) throw new Error('No config was exported')
-  validate(cfg)
-  return cfg
+export interface ConfigSsrH2 {
+  generate?: boolean
+  upgradeInsecure?: boolean
+  http2: true
+  ssl: {
+    cert: string
+    key: string
+  }
+}
+
+export interface Config {
+  documents?: ConfigDocumentsFs | ConfigDocumentsRegistry,
+  ui?: ConfigUi
+  build?: ConfigBuild
+  ssr?: ConfigSsr | ConfigSsrH2
 }
