@@ -83,8 +83,7 @@ Where built assets will be saved.
 What the final result should compile to. Possible values are:
   - `preact` (Default)
   - `html` (**Not implemented**)
-  - `html+turbolinks` (**Not implemented**)
-
+  - `html+turbolinks` (**Not implemented**)<br>
 *What's Turbolinks?* - [Turbolinks](https://github.com/turbolinks/turbolinks) is a small JavaScript library that makes
 navigating a web page a bit faster. Check out their README for more details.
 
@@ -101,6 +100,9 @@ even if they go offline (provided they visited the docs at least once prior) or 
 - `build.mangle` - boolean (default: `true`)<br>
 Whether exports should be mangled or not.
 
+- `build.split` - boolean (default: `true`)<br>
+Whether Spoonfeed should make use of code splitting or not. Reduces the initial bundle size.
+
 ## Pre-rendering server-side options
 **Note**: Those will only be used if you set your app to compile to a Preact app.
 
@@ -108,7 +110,11 @@ Whether exports should be mangled or not.
 Whether Spoonfeed should generate a web server for pre-rendering the Preact app.
 
 - `ssr.http2` - boolean (default: `false`)<br>
-Whether the HTTP server should be a HTTP/2 server. Requires a valid SSL certificate.
+Whether the HTTP server should be a HTTP/2 server. Requires a valid SSL certificate.<br>
+**Note**: When enabled, browsers not supporting HTTP/2 will be unable to connect.
+
+- `ssr.redirectInsecure` - boolean (default: `false`)<br>
+Redirects plain HTTP requests to HTTPS. Requires a valid SSL certificate.
 
 - `ssr.ssl.key` - string (default: `null`)<br>
 Path to the SSL private key. It'll be copied in the build target folder.

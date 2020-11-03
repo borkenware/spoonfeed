@@ -32,33 +32,35 @@ import { dirname, join } from 'path'
 import { Config } from './types'
 import validate from './validator'
 
-export function findConfig (dir: string | null = null): string | null {
+interface ConfigPath { cfg: string | null, dir: string }
+
+export function findConfig (dir: string | null = null): ConfigPath {
   if (!dir) dir = process.cwd()
 
   if (existsSync(join(dir, 'spoonfeed.config.js'))) {
-    return join(dir, 'spoonfeed.config.js')
+    return { cfg: join(dir, 'spoonfeed.config.js'), dir }
   }
 
   if (existsSync(join(dir, 'package.json'))) {
-    return null
+    return { cfg: null, dir }
   }
 
   const next = dirname(dir)
   if (next === dir) {
     // We reached system root
-    return null
+    return { cfg: null, dir }
   }
 
   return findConfig(next)
 }
 
-export default function readConfig (): Config {
+export function readConfig (): Config {
   const path = findConfig()
-  if (!path) return {}
+  if (!path.cfg) return { workdir: path.dir }
 
   let cfg;
   try {
-    const blob = readFileSync(path, 'utf8')
+    const blob = readFileSync(path.cfg, 'utf8')
     const m: any = new Module('cfg')
     m._compile(`module.exports = null; ${blob}`, path)
     cfg = m.exports
@@ -67,6 +69,13 @@ export default function readConfig (): Config {
   }
 
   if (!cfg) throw new Error('No config was exported')
+  cfg.workdir = path.dir
   validate(cfg)
   return cfg
+}
+
+let config: Config | null = null
+export default function getConfig (): Config {
+  if (!config) config = readConfig()
+  return config
 }

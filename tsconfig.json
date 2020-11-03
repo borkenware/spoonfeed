@@ -8,6 +8,11 @@
     "module": "commonjs",
     "target": "es6",
     "baseUrl": "./src",
-    "lib": [ "es2020.string" ]
-  }
+    "lib": [ "es2020.string" ],
+    "jsx": "preserve",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
+    "outDir": "./dist"
+  },
+  "include": [ "src/**/*" ]
 }

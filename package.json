@@ -6,8 +6,12 @@
   "repository": "git@github.com:borkenware/spoonfeed.git",
   "author": "Bowser65 <bowoser@borkenware.com>",
   "license": "BSD-3-Clause",
+  "bin": {
+    "spoonfeed": "./dist/cli/spoonfeed.js"
+  },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc && node postbuild.js"
   },
   "dependencies": {
     "@rollup/plugin-sucrase": "^3.1.0",

@@ -38,5 +38,8 @@ from.
 We love React at Borkenware, but it unfortunately often ends up in rather large bundles, which is not justified here
 since we don't use a lot of React features. So we've decided to ship Preact, to have the best of the two worlds.
 
+We will in the future also support generating plain html files, for compatibility with GitHub pages or if you prefer
+it that way. They will most likely come with a reduced feature set, though.
+
 ## Why "Spoonfeed"?
 GitHub suggested `fictional-spoon` when creating the repo. No it's not a joke it's actually how it got this name.

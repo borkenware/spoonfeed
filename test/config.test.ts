@@ -56,13 +56,11 @@ jest.mock('fs', function () {
 })
 
 import * as fs from 'fs'
-import readConfig, { findConfig } from '../src/config'
+import { readConfig, findConfig } from '../src/config'
 import validate from '../src/config/validator'
 
 describe('resolver', function () {
-  beforeEach(function () {
-    (fs.existsSync as any).mockClear()
-  })
+  beforeEach(() => (fs.existsSync as any).mockClear())
 
   test('resolves the config path', function () {
     const res = findConfig('/test/resolver/case1')

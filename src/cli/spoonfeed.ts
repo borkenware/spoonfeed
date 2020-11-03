@@ -27,4 +27,44 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-console.log('henlo')
+// We use require here so it doesn't get bundled by TS
+const { version } = require('../../package.json')
+
+function handleBundle () {
+
+}
+
+function handleServe () {
+  console.log('Not implemented yet!')
+}
+
+function handleAbout () {
+  console.log('Proudly built by Borkenware.')
+  // some day -- console.log('Proudly built by Borkenware, and ##{CONTRIBUTORS} contributors.')
+  console.log(`Spoonfeed is Open ${Math.random().toFixed(3) === '0.420' ? 'Sauce' : 'Source'} Software, licensed under BSD-3-Clause.`)
+  console.log('https://github.com/borkenware/spoonfeed')
+}
+
+console.log(`Spoonfeed v${version}`, '\n')
+const command = process.argv[process.argv.length - 1] 
+switch (command) {
+  case 'bundle':
+    handleBundle()
+    break
+  case 'bundle':
+    handleServe()
+    break
+  case 'about':
+    handleAbout()
+    break
+  default:
+    console.log(`Invalid usage! Unknown command "${command}".`)
+    console.log('Valid usages are:')
+    console.log(' - spoonfeed bundle')
+    console.log('   Bundles the documentation')
+    console.log(' - spoonfeed serve ## NOT IMPLEMENTED')
+    console.log('   Starts the dev server')
+    console.log(' - spoonfeed about')
+    console.log('   Prints information about Spoonfeed')
+    break
+}

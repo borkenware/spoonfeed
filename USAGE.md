@@ -121,4 +121,4 @@ Then, you can fire up the server simply by running `node server.js`. By default,
  - `SPOONFEED_BIND_PORT`: Controls the port Spoonfeed listens to.
 
 If HTTPS upgrades are enabled, a plain HTTP server will be listen to `<SPOONFEED_BIND_ADDR>:80` and redirect incoming
-requests to the HTTPS server. This cannot be changed.
+requests to the HTTPS server. The port cannot be changed.

@@ -56,7 +56,7 @@ export interface ConfigBuild {
 
 export interface ConfigSsr {
   generate?: boolean
-  upgradeInsecure?: boolean
+  redirectInsecure?: boolean
   http2?: false
   ssl?: {
     cert: string
@@ -66,7 +66,7 @@ export interface ConfigSsr {
 
 export interface ConfigSsrH2 {
   generate?: boolean
-  upgradeInsecure?: boolean
+  redirectInsecure?: boolean
   http2: true
   ssl: {
     cert: string
@@ -75,6 +75,7 @@ export interface ConfigSsrH2 {
 }
 
 export interface Config {
+  workdir: string,
   documents?: ConfigDocumentsFs | ConfigDocumentsRegistry,
   ui?: ConfigUi
   build?: ConfigBuild

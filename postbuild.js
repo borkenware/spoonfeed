@@ -25,19 +25,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export type ExtendedType = 'string' | 'number' | 'bigint' |
-  'boolean' | 'symbol' | 'undefined' | 'object' | 'function' |
-  'array' | 'null' | 'nan'
+const { join } = require('path')
+const { readFileSync, writeFileSync } = require('fs')
+const { execSync } = require('child_process')
 
-export function extendedTypeof (obj: any): ExtendedType {
-  let type: ExtendedType = typeof obj
-  if (type === 'object' && Array.isArray(obj)) type = 'array'
-  if (type === 'object' && obj === null) type = 'null'
-  if (type === 'number' && isNaN(obj)) type = 'nan'
+// Replace contributors count
+const contribCount = execSync(`git --no-pager shortlog -s -n --no-merges`, { stdio: [ 'inherit', 'pipe', 'pipe' ]})
+  .toString().split('\n').filter(Boolean).length
 
-  return type
-}
-
-export function hasOwnProperty<X extends {}, Y extends PropertyKey>(obj: X, prop: Y): obj is X & Record<Y, any> {
-  return Object.prototype.hasOwnProperty.call(obj, prop)
-}
+const sfCli = join(__dirname, 'dist/cli/spoonfeed.js')
+writeFileSync(sfCli, readFileSync(sfCli, 'utf8').replace('##{CONTRIBUTORS}', contribCount), 'utf8')

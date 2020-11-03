@@ -82,10 +82,10 @@ const schema: Schema = {
   ssr: {
     schema: {
       generate: { types: 'boolean' },
-      upgradeInsecure: { types: 'boolean' },
+      redirectInsecure: { types: 'boolean' },
       http2: { types: 'boolean' },
       ssl: {
-        required: c => !!c?.ssr?.http2,
+        required: c => !!(c?.ssr?.http2 || c?.ssr?.redirectInsecure),
         schema: {
           cert: { required: true, types: 'string' },
           key: { required: true, types: 'string' }
@@ -104,7 +104,7 @@ function validateSchema (schema: Schema, object: object, full?: object, prefix: 
   if (!full) full = object
   for (const [ key, item ] of Object.entries(schema)) {
     const required = item.required
-      ? typeof item.required === 'function' ? item.required(full) : item.required
+      ? typeof item.required === 'function' ? item.required(full as Config) : item.required
       : false
 
     if (hasOwnProperty(object, key)) {
