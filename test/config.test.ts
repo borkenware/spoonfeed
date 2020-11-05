@@ -56,31 +56,31 @@ jest.mock('fs', function () {
 })
 
 import * as fs from 'fs'
-import { readConfig, findConfig } from '../src/config'
+import readConfig, { findConfig } from '../src/config'
 import validate from '../src/config/validator'
 
 describe('resolver', function () {
-  beforeEach(() => (fs.existsSync as any).mockClear())
+  afterEach(() => (fs.existsSync as any).mockClear())
 
   test('resolves the config path', function () {
     const res = findConfig('/test/resolver/case1')
-    expect(res).toBe('/test/resolver/case1/spoonfeed.config.js')
+    expect(res.cfg).toBe('/test/resolver/case1/spoonfeed.config.js')
   })
 
   test('resolves the config path in a parent folder', function () {
     const res = findConfig('/test/resolver/case2/src')
-    expect(res).toBe('/test/resolver/case2/spoonfeed.config.js')
+    expect(res.cfg).toBe('/test/resolver/case2/spoonfeed.config.js')
   })
 
   test('stops at project root', function () {
     const res = findConfig('/test/resolver/case3/src')
-    expect(res).toBeNull()
+    expect(res.cfg).toBeNull()
     expect(fs.existsSync).toHaveBeenCalledTimes(4)
   })
 
   test('stops at system root', function () {
     const res = findConfig('/test/resolver')
-    expect(res).toBeNull()
+    expect(res.cfg).toBeNull()
     expect(fs.existsSync).toHaveBeenCalledTimes(6)
   })
 })
@@ -135,28 +135,39 @@ describe('reader', function () {
   let ogCwd = process.cwd
   afterEach(() => (process.cwd = ogCwd))
 
+  function mockConfig (mockCwd) {
+    process.cwd = () => mockCwd
+    jest.mock(`${mockCwd}/spoonfeed.config.js`, function () {
+      const fs = jest.requireMock('fs')
+      const js = fs.readFileSync(`${mockCwd}/spoonfeed.config.js`, 'utf8')
+      let module: any = {}
+      eval(js)
+      return module.exports
+    }, { virtual: true })
+  }
+
   test('reads config normally', function () {
-    process.cwd = () => '/test/reader/case1'
+    mockConfig('/test/reader/case1')
     expect(readConfig).not.toThrow()
   })
 
   test('handles invalid JS in config', function () {
-    process.cwd = () => '/test/reader/case2'
+    mockConfig('/test/reader/case2')
     expect(readConfig).toThrow(SyntaxError)
   })
 
   test('handles no exports', function () {
-    process.cwd = () => '/test/reader/case3'
+    mockConfig('/test/reader/case3')
     expect(readConfig).toThrow(/no config was exported/i)
   })
 
   test('handles invalid exports', function () {
-    process.cwd = () => '/test/reader/case4'
+    mockConfig('/test/reader/case4')
     expect(readConfig).toThrow(/invalid field type(.*?)for root/i)
   })
 
   test('throws on invalid config', function () {
-    process.cwd = () => '/test/reader/case5'
+    mockConfig('/test/reader/case5')
     expect(readConfig).toThrow()
   })
 

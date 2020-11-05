@@ -25,49 +25,48 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Module } from 'module'
-import { existsSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { join } from 'path'
+import { statSync } from 'fs'
+import { readdir as fsReaddir } from 'fs/promises'
 
-import { Config } from './types'
-import validate from './validator'
+const md = /\.(md|markdown)$/i
 
-interface ConfigPath { cfg: string | null, dir: string }
-
-export function findConfig (dir: string | null = null): ConfigPath {
-  if (!dir) dir = process.cwd()
-
-  if (existsSync(join(dir, 'spoonfeed.config.js'))) {
-    return { cfg: join(dir, 'spoonfeed.config.js'), dir }
-  }
-
-  if (existsSync(join(dir, 'package.json'))) {
-    return { cfg: null, dir }
-  }
-
-  const next = dirname(dir)
-  if (next === dir) {
-    // We reached system root
-    return { cfg: null, dir }
-  }
-
-  return findConfig(next)
+interface ReaddirResult {
+  folders: string[]
+  files: string[]
 }
 
-export default function readConfig (): Config {
-  const path = findConfig()
-  if (!path.cfg) return { workdir: path.dir }
+export interface Category {
+  category: string
+  documents: string[]
+}
 
-  let cfg;
-  try {
-    cfg = require(path.cfg)
-  } catch (e) {
-    throw new SyntaxError(e)
+export type Registry = Array<Category | string>
+
+async function readdir (folder: string): Promise<ReaddirResult> {
+  const files: string[] = []
+  const folders: string[] = []
+
+  for (const file of await fsReaddir(folder)) {
+    if (statSync(join(folder, file)).isDirectory()) {
+      folders.push(file)
+    } else if (md.test(file)) {
+      files.push(file)
+    }
   }
 
-  if (!cfg) throw new Error('No config was exported')
-  validate(cfg)
+  return { files, folders }
+}
 
-  cfg.workdir = path.dir
-  return cfg
+export default async function fsToRegistry (basepath: string): Promise<Registry> {
+  const registry: Registry = []
+  const res = await readdir(basepath)
+  registry.push(...res.files.map(f => join(basepath, f)))
+  for (const folder of res.folders) {
+    const { files } = await readdir(join(basepath, folder))
+    const documents = files.map(f => join(basepath, folder, f))
+    registry.push({ category: folder.replace(/^\d+-/, ''), documents })
+  }
+
+  return registry
 }
