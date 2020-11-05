@@ -32,11 +32,17 @@ interface Schema {
   [k: string]: SchemaItem
 }
 
-type SchemaItem = SchemaItemType | SchemaItemValues | SchemaItemNested
+type SchemaItem = SchemaItemType | SchemaItemTypeArray | SchemaItemValues | SchemaItemNested
 
 interface SchemaItemType {
   required?: boolean | ((cfg: Config | null) => boolean)
   types: ExtendedType | ExtendedType[]
+}
+
+interface SchemaItemTypeArray {
+  required?: boolean | ((cfg: Config | null) => boolean)
+  types: 'array'
+  of: SchemaItem[]
 }
 
 interface SchemaItemValues {
@@ -49,14 +55,28 @@ interface SchemaItemNested {
   schema: Schema
 }
 
+enum ErrorTypes { TYPE, VALUE, ARRAY }
+
 const schema: Schema = {
   documents: {
     schema: {
       source: { values: [ 'filesystem', 'registry' ] },
       assets: { types: 'string' },
       // Filesystem specific
-      path: { types: 'string' }
+      path: { types: 'string' },
       // Registry specific
+      documents: {
+        types: 'array',
+        of: [
+          { types: 'string' },
+          {
+            schema: {
+              category: { types: 'string' },
+              documents: { types: 'array', of: [ { types: 'string' } ] }
+            }
+          }
+        ]
+      }
     }
   },
   ui: {
@@ -95,6 +115,32 @@ const schema: Schema = {
   }
 }
 
+function validateType (value: any, item: SchemaItem, full: object, prefix: string, tc: boolean = false): ErrorTypes | void {
+  /* istanbul ignore else */
+  if (hasOwnProperty(item, 'types')) {
+    const types = Array.isArray(item.types) ? item.types : [ item.types ]
+    const type = extendedTypeof(value)
+    if (!types.includes(type)) return ErrorTypes.TYPE
+
+    if (type === 'array' && hasOwnProperty(item, 'of')) {
+      const array = value as any[]
+      for (const val of array) {
+        if (item.of.every(sc => typeof validateType(val, sc, full, prefix, true) !== 'undefined'))
+          return ErrorTypes.ARRAY
+      }
+    }
+  } else if (hasOwnProperty(item, 'values')) {
+    if (!item.values.includes(value)) return ErrorTypes.VALUE
+  } else if (hasOwnProperty(item, 'schema')) {
+    try {
+      validateSchema(item.schema, value, full, prefix)
+    } catch (e) {
+      if (tc) return ErrorTypes.ARRAY
+      throw e
+    }
+  }
+}
+
 function validateSchema (schema: Schema, object: object, full?: object, prefix: string = '') {
   const rootType = extendedTypeof(object)
   if (rootType !== 'object') {
@@ -108,19 +154,21 @@ function validateSchema (schema: Schema, object: object, full?: object, prefix: 
       : false
 
     if (hasOwnProperty(object, key)) {
-      /* istanbul ignore else */
-      if (hasOwnProperty(item, 'types')) {
-        const types = Array.isArray(item.types) ? item.types : [ item.types ]
-        const type = extendedTypeof(object[key])
-        if (!types.includes(type)) {
-          throw new TypeError(`Invalid field type: expected ${types.join(' or ')}, got ${type} for ${prefix}${key}`)
+      const error = validateType(object[key], item, full, `${prefix}${key}.`)
+      switch (error) {
+        case ErrorTypes.TYPE: {
+          const i = item as SchemaItemType
+          const types = Array.isArray(i.types) ? i.types : [ i.types ]
+          throw new TypeError(`Invalid field type: expected ${types.join(' or ')}, got ${extendedTypeof(object[key])} for ${prefix}${key}`)
         }
-      } else if (hasOwnProperty(item, 'values')) {
-        if (!item.values.includes(object[key])) {
-          throw new TypeError(`Invalid field value: expected ${item.values.map(s => `"${s}"`).join(' or ')}, got ${object[key]} for ${prefix}${key}`)
+        case ErrorTypes.VALUE: {
+          const i = item as SchemaItemValues
+          throw new TypeError(`Invalid field value: expected ${i.values.map(s => `"${s}"`).join(' or ')}, got ${object[key]} for ${prefix}${key}`)
         }
-      } else if (hasOwnProperty(item, 'schema')) {
-        validateSchema(item.schema, object[key], full, `${prefix}${key}.`)
+        case ErrorTypes.ARRAY: {
+          const i = item as SchemaItemValues
+          throw new TypeError(`Invalid array item value for ${prefix}${key}`)
+        }
       }
     } else if (required) {
       throw new TypeError(`Missing required field ${prefix}${key}`)

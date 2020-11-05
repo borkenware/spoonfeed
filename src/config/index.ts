@@ -25,8 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Module } from 'module'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync } from 'fs'
 import { dirname, join } from 'path'
 
 import { Config } from './types'
@@ -59,11 +58,8 @@ export default function readConfig (): Config {
   if (!path.cfg) return { workdir: path.dir }
 
   let cfg;
-  try {
-    cfg = require(path.cfg)
-  } catch (e) {
-    throw new SyntaxError(e)
-  }
+  try { cfg = require(path.cfg) }
+  catch (e) { throw new SyntaxError(e) }
 
   if (!cfg) throw new Error('No config was exported')
   validate(cfg)

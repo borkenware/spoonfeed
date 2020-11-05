@@ -92,7 +92,7 @@ describe('validator', function () {
   test('doesn\'t reject valid config', function () {
     expect(function () {
       validate({
-        documents: { path: 'docs/yes' },
+        documents: { path: 'docs/yes', documents: [ 'test' ] },
         ui: { title: 'Test docs', copyright: null },
         build: { mode: 'preact' },
         ssr: { generate: true, ssl: { cert: '/ssl.crt', key: '/ssl.key' } }
@@ -104,9 +104,9 @@ describe('validator', function () {
     expect(function () {
       validate({
         documents: { path: 'docs/yes' },
-        ui: { title: false },
+        ui: { copyright: 0 },
         ssr: { generate: true }
-      } as any) // as any since we're intentionally breaking types
+      })
     }).toThrow(/invalid field type/i)
   })
 
@@ -116,8 +116,20 @@ describe('validator', function () {
         documents: { path: 'docs/yes' },
         build: { mode: 'magic' },
         ssr: { generate: true }
-      } as any) // as any since we're intentionally breaking types
+      })
     }).toThrow(/invalid field value/i)
+  })
+
+  test('rejects invalid config array values', function () {
+    expect(function () {
+      validate({
+        documents: {
+          mode: 'registry',
+          documents: [ 0 ]
+        },
+        ssr: { generate: true }
+      })
+    }).toThrow(/invalid array item value/i)
   })
 
   test('rejects missing fields', function () {
@@ -126,7 +138,7 @@ describe('validator', function () {
         documents: { path: 'docs/yes' },
         ui: { title: 'Test docs' },
         ssr: { http2: true }
-      } as any) // as any since we're intentionally breaking types
+      })
     }).toThrow(/missing required field/i)
   })
 })
