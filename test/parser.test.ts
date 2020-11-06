@@ -25,8 +25,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import parse from '../src/markdown/parser'
-import inlineParse from '../src/markdown/inline'
+import { parseMarkup } from '../src/markdown/parser'
+import { parseInlineMarkup } from '../src/markdown/inline'
 import {
   MarkdownHeadingNode, MarkdownNoteNode, MarkdownCodeNode,
   MarkdownHttpNode, MarkdownListNode, MarkdownTableNode,
@@ -36,14 +36,14 @@ import {
 
 describe('markdown document sections', function () {
   test('comments', function () {
-    const res = parse('<!-- this is a comment -->')
+    const res = parseMarkup('<!-- this is a comment -->')
     expect(res.length).toBe(1)
     expect(res[0].type).toBe('comment')
     expect((res[0] as any).content).toBe('this is a comment')
   })
 
   test('heading blocks (classic syntax)', function () {
-    const res = parse('# Title\nThis is some text\n\n## Subtitle')
+    const res = parseMarkup('# Title\nThis is some text\n\n## Subtitle')
     expect(res.length).toBe(3)
     expect(res[0].type).toBe('heading')
     expect(res[1].type).toBe('paragraph')
@@ -53,7 +53,7 @@ describe('markdown document sections', function () {
   })
 
   test('heading blocks (underline syntax)', function () {
-    const res = parse('Title\n===This is some text\n\nSubtitle\n---')
+    const res = parseMarkup('Title\n===This is some text\n\nSubtitle\n---')
     expect(res.length).toBe(3)
     expect(res[0].type).toBe('heading')
     expect(res[1].type).toBe('paragraph')
@@ -63,7 +63,7 @@ describe('markdown document sections', function () {
   })
 
   test('quotes', function () {
-    const res = parse('> this is\n> a test quote\n\n> and this is a second quote')
+    const res = parseMarkup('> this is\n> a test quote\n\n> and this is a second quote')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('quote')
     expect(res[1].type).toBe('quote')
@@ -71,7 +71,7 @@ describe('markdown document sections', function () {
   })
 
   test('note blocks', function () {
-    const res = parse('>info\n> this is\n> an informative note\n\n>warn\n> and this is warning')
+    const res = parseMarkup('>info\n> this is\n> an informative note\n\n>warn\n> and this is warning')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('note')
     expect((res[0] as MarkdownNoteNode).kind).toBe('info')
@@ -81,7 +81,7 @@ describe('markdown document sections', function () {
   })
 
   test('code blocks', function () {
-    const res = parse('```\nthis is a plain code block\n```\n```js\nconsole.log("this is a js code block")\n```')
+    const res = parseMarkup('```\nthis is a plain code block\n```\n```js\nconsole.log("this is a js code block")\n```')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('code-block')
     expect(res[1].type).toBe('code-block')
@@ -89,7 +89,7 @@ describe('markdown document sections', function () {
   })
 
   test('http blocks', function () {
-    const res = parse('%% GET /users/{id}/cuteness')
+    const res = parseMarkup('%% GET /users/{id}/cuteness')
     expect(res.length).toBe(1)
     expect(res[0].type).toBe('http')
     const http = res[0] as MarkdownHttpNode
@@ -104,7 +104,7 @@ describe('markdown document sections', function () {
   })
 
   test('rulers', function () {
-    const res = parse('First paragraph\n\n-----\n\nSecond paragraph')
+    const res = parseMarkup('First paragraph\n\n-----\n\nSecond paragraph')
     expect(res.length).toBe(3)
     expect(res[0].type).toBe('paragraph')
     expect(res[1].type).toBe('ruler')
@@ -113,7 +113,7 @@ describe('markdown document sections', function () {
 
   describe('lists', function () {
     test('simple (unordered)', function () {
-      const res = parse(' - Item 1\n - Item 2\n - Item 3')
+      const res = parseMarkup(' - Item 1\n - Item 2\n - Item 3')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('list')
       const list = res[0] as MarkdownListNode
@@ -123,14 +123,14 @@ describe('markdown document sections', function () {
     })
 
     test('simple (ordered)', function () {
-      const res = parse(' 1. Item 1\n 2. Item 2\n 3. Item 3')
+      const res = parseMarkup(' 1. Item 1\n 2. Item 2\n 3. Item 3')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('list')
       expect((res[0] as MarkdownListNode).ordered).toBe(true)
     })
 
     test('stacked', function () {
-      const res = parse(' - Item 1\n - Item 2\n   - Item 2.1\n   - Item 2.2\n - Item 3')
+      const res = parseMarkup(' - Item 1\n - Item 2\n   - Item 2.1\n   - Item 2.2\n - Item 3')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('list')
       const list = res[0] as MarkdownListNode
@@ -139,7 +139,7 @@ describe('markdown document sections', function () {
     })
 
     test('stacked (mixed)', function () {
-      const res = parse(' - Item 1\n - Item 2\n   1. Item 2.1\n   2. Item 2.2\n - Item 3')
+      const res = parseMarkup(' - Item 1\n - Item 2\n   1. Item 2.1\n   2. Item 2.2\n - Item 3')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('list')
       const list = res[0] as MarkdownListNode
@@ -152,19 +152,19 @@ describe('markdown document sections', function () {
 
   describe('tables', function () {
     test('simple', function () {
-      const res = parse('| a | b | c |\n|--|--|--|\n| d | e | f |')
+      const res = parseMarkup('| a | b | c |\n|--|--|--|\n| d | e | f |')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('table')
     })
 
     test('invalid', function () {
-      const res = parse('| a | b | c |\n|--|--|\n| d | e | f |')
+      const res = parseMarkup('| a | b | c |\n|--|--|\n| d | e | f |')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('paragraph')
     })
 
     test('alignments', function () {
-      const res = parse('| a | b | c |\n|--|:--:|--|\n| d | e | f |')
+      const res = parseMarkup('| a | b | c |\n|--|:--:|--|\n| d | e | f |')
       expect(res.length).toBe(1)
       expect(res[0].type).toBe('table')
       const table = res[0] as MarkdownTableNode
@@ -177,7 +177,7 @@ describe('markdown document sections', function () {
 
 describe('markdown inline markup', function () {
   test('bold', function () {
-    const res = inlineParse('this should be **bold**')
+    const res = parseInlineMarkup('this should be **bold**')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('bold')
@@ -186,7 +186,7 @@ describe('markdown inline markup', function () {
   })
 
   test('italic', function () {
-    const res = inlineParse('this should be *italic* and _that too_')
+    const res = parseInlineMarkup('this should be *italic* and _that too_')
     expect(res.length).toBe(4)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('italic')
@@ -196,7 +196,7 @@ describe('markdown inline markup', function () {
   })
 
   test('underline', function () {
-    const res = inlineParse('this should be __underlined__')
+    const res = parseInlineMarkup('this should be __underlined__')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('underline')
@@ -205,7 +205,7 @@ describe('markdown inline markup', function () {
   })
 
   test('strike-through', function () {
-    const res = inlineParse('this should be ~~striked~~')
+    const res = parseInlineMarkup('this should be ~~striked~~')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('strike-through')
@@ -214,7 +214,7 @@ describe('markdown inline markup', function () {
   })
 
   test('code', function () {
-    const res = inlineParse('this should be `inline code`')
+    const res = parseInlineMarkup('this should be `inline code`')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('code')
@@ -223,7 +223,7 @@ describe('markdown inline markup', function () {
   })
 
   test('stacked markup', function () {
-    const res = inlineParse('this should be ~~striked **and bold**~~')
+    const res = parseInlineMarkup('this should be ~~striked **and bold**~~')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('strike-through')
@@ -235,7 +235,7 @@ describe('markdown inline markup', function () {
   })
 
   test('stacked markup (ambiguous)', function () {
-    const res = inlineParse('this should be ***bold and italic***')
+    const res = parseInlineMarkup('this should be ***bold and italic***')
     expect(res.length).toBe(2)
     expect(res[0].type).toBe('text')
     expect(res[1].type).toBe('bold')
@@ -246,19 +246,19 @@ describe('markdown inline markup', function () {
   })
 
   test('line breaks', function () {
-    const res = inlineParse('there should be<br>a line break')
+    const res = parseInlineMarkup('there should be<br>a line break')
     expect(res.length).toBe(3)
     expect(res[1].type).toBe('line-break')
   })
 
   test('email', function () {
-    const res = inlineParse('contact nobody at nobody@example.com and get no answer')
+    const res = parseInlineMarkup('contact nobody at nobody@example.com and get no answer')
     expect(res.length).toBe(3)
     expect(res[1].type).toBe('email')
   })
 
   test('images', function () {
-    const res = inlineParse('Here is a cute cat pic: ![cat](https://borkenware.com/cat.png)')
+    const res = parseInlineMarkup('Here is a cute cat pic: ![cat](https://borkenware.com/cat.png)')
 
     expect(res.length).toBe(2)
     expect(res[1].type).toBe('image')
@@ -269,19 +269,19 @@ describe('markdown inline markup', function () {
 
   describe('links', function () {
     test('plain (http)', function () {
-      const res = inlineParse('go to https://borkenware.com for more')
+      const res = parseInlineMarkup('go to https://borkenware.com for more')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('link')
     })
 
     test('plain (www)', function () {
-      const res = inlineParse('go to www.borkenware.com for more')
+      const res = parseInlineMarkup('go to www.borkenware.com for more')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('link')
     })
 
     test('labelled (full)', function () {
-      const res = inlineParse('go to [our website](https://borkenware.com) for more')
+      const res = parseInlineMarkup('go to [our website](https://borkenware.com) for more')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('link')
       const link = res[1] as MarkdownLinkNode
@@ -290,7 +290,7 @@ describe('markdown inline markup', function () {
     })
 
     test('labelled (partial)', function () {
-      const res = inlineParse('go [here](/path/to/info) for more info')
+      const res = parseInlineMarkup('go [here](/path/to/info) for more info')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('link')
       const link = res[1] as MarkdownLinkNode
@@ -299,7 +299,7 @@ describe('markdown inline markup', function () {
     })
 
     test('label with markup', function () {
-      const res = inlineParse('go to [our **awesome** website](https://borkenware.com) for more')
+      const res = parseInlineMarkup('go to [our **awesome** website](https://borkenware.com) for more')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('link')
       const link = res[1] as MarkdownLinkNode
@@ -307,7 +307,7 @@ describe('markdown inline markup', function () {
     })
 
     test('anchor', function () {
-      const res = inlineParse('See the [important stuff](#important) for more important info')
+      const res = parseInlineMarkup('See the [important stuff](#important) for more important info')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('anchor')
       const link = res[1] as MarkdownAnchorNode
@@ -315,7 +315,7 @@ describe('markdown inline markup', function () {
     })
 
     test('uncategorized document', function () {
-      const res = inlineParse('See the [important stuff](##important) for more important info')
+      const res = parseInlineMarkup('See the [important stuff](##important) for more important info')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('document')
       const document = res[1] as MarkdownDocumentNode
@@ -325,7 +325,7 @@ describe('markdown inline markup', function () {
     })
 
     test('categorized document', function () {
-      const res = inlineParse('See the [important stuff](##main/important) for more important info')
+      const res = parseInlineMarkup('See the [important stuff](##main/important) for more important info')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('document')
       const document = res[1] as MarkdownDocumentNode
@@ -335,7 +335,7 @@ describe('markdown inline markup', function () {
     })
 
     test('document with anchor', function () {
-      const res = inlineParse('See the [important stuff](##main/important#anchor) for more important info')
+      const res = parseInlineMarkup('See the [important stuff](##main/important#anchor) for more important info')
       expect(res.length).toBe(3)
       expect(res[1].type).toBe('document')
       const document = res[1] as MarkdownDocumentNode
@@ -347,7 +347,7 @@ describe('markdown inline markup', function () {
 
   describe('videos', function () {
     test('media', function () {
-      const res = inlineParse('Here\'s the introduction video: !!v[/video/intro.mp4]')
+      const res = parseInlineMarkup('Here\'s the introduction video: !!v[/video/intro.mp4]')
       expect(res.length).toBe(2)
       expect(res[1].type).toBe('video')
       const video = res[1] as MarkdownVideoNode
@@ -356,7 +356,7 @@ describe('markdown inline markup', function () {
     })
 
     test('youtube', function () {
-      const res = inlineParse('Here\'s the introduction video: !!v[https://youtube.com/watch?v=Tt7bzxurJ1I]')
+      const res = parseInlineMarkup('Here\'s the introduction video: !!v[https://youtube.com/watch?v=Tt7bzxurJ1I]')
       expect(res.length).toBe(2)
       expect(res[1].type).toBe('video')
       const video = res[1] as MarkdownVideoNode
@@ -364,4 +364,11 @@ describe('markdown inline markup', function () {
       expect(video.src).toBe('Tt7bzxurJ1I')
     })
   })
+})
+
+describe('resource extraction', function () {
+  test.todo('extracts images')
+  test.todo('extracts videos')
+  test.todo('extracts images in nested structures')
+  test.todo('does not extract remote urls')
 })

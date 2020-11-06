@@ -26,8 +26,10 @@
  */
 
 import { join } from 'path'
-import { statSync } from 'fs'
+import { statSync, existsSync } from 'fs'
 import { readdir as fsReaddir } from 'fs/promises'
+
+import { DocumentRegistry, RawDocumentRegistry } from './config/types'
 
 const md = /\.(md|markdown)$/i
 
@@ -35,13 +37,6 @@ interface ReaddirResult {
   folders: string[]
   files: string[]
 }
-
-export interface Category {
-  category: string
-  documents: string[]
-}
-
-export type Registry = Array<Category | string>
 
 async function readdir (folder: string): Promise<ReaddirResult> {
   const files: string[] = []
@@ -58,14 +53,35 @@ async function readdir (folder: string): Promise<ReaddirResult> {
   return { files, folders }
 }
 
-export default async function fsToRegistry (basepath: string): Promise<Registry> {
-  const registry: Registry = []
+export function validateRegistry (basepath: string, registry: RawDocumentRegistry): boolean {
+  for (const r of registry) {
+    if (typeof r === 'string') {
+      if (!existsSync(join(basepath, r))) return false
+    } else {
+      const base = join(basepath, r.category)
+      for (const d of r.documents) {
+        if (!existsSync(join(base, d))) return false
+      }
+    }
+  }
+
+  return true
+}
+
+export default async function fsToRegistry (basepath: string): Promise<DocumentRegistry> {
+  const registry: DocumentRegistry = {
+    documentCount: 0,
+    documents: []
+  }
+
   const res = await readdir(basepath)
-  registry.push(...res.files.map(f => join(basepath, f)))
+  registry.documentCount += res.files.length
+  registry.documents.push(...res.files.map(f => join(basepath, f)))
   for (const folder of res.folders) {
     const { files } = await readdir(join(basepath, folder))
     const documents = files.map(f => join(basepath, folder, f))
-    registry.push({ category: folder.replace(/^\d+-/, ''), documents })
+    registry.documentCount += documents.length
+    registry.documents.push({ category: folder, documents })
   }
 
   return registry

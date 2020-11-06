@@ -96,7 +96,8 @@ const schema: Schema = {
       sourcemaps: { types: 'boolean' },
       optimizeImg: { types: 'boolean' },
       offline: { types: 'boolean' },
-      mangle: { types: 'boolean' }
+      mangle: { types: 'boolean' },
+      split: { types: 'boolean' }
     }
   },
   ssr: {

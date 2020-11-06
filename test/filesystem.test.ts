@@ -42,8 +42,7 @@ jest.mock('fs', function () {
       '/test/fs/case4/cat1/b.md': '',
       '/test/fs/case4/cat2/a.md': '',
       '/test/fs/case4/cat2/b.md': '',
-      '/test/fs/case4/cat2/aaa/uwu.md': '',
-      '/test/fs/case5/0-cat/a.md': ''
+      '/test/fs/case4/cat2/aaa/uwu.md': ''
     })
   )
 })
@@ -58,35 +57,43 @@ import fsToRegistry from '../src/filesystem'
 describe('filesystem crawler', function () {
   test('finds files', async function () {
     const res = await fsToRegistry('/test/fs/case1')
-    expect(res.length).toBe(2)
+    expect(res.documentCount).toBe(2)
+    expect(res.documents.length).toBe(2)
   })
 
   test('crawls categories', async function () {
     const res = await fsToRegistry('/test/fs/case2')
-    expect(res.length).toBe(2)
-    expect(typeof res[0]).toBe('object')
-    expect(typeof res[1]).toBe('object')
-    expect((res[0] as any).documents.length).toBe(2)
-    expect((res[1] as any).documents.length).toBe(2)
+    expect(res.documentCount).toBe(4)
+    expect(res.documents.length).toBe(2)
+    expect(typeof res.documents[0]).toBe('object')
+    expect(typeof res.documents[1]).toBe('object')
+    expect((res.documents[0] as any).documents.length).toBe(2)
+    expect((res.documents[1] as any).documents.length).toBe(2)
   })
 
   test('ignores non-md files', async function () {
     const res = await fsToRegistry('/test/fs/case3')
-    expect(res.length).toBe(2)
+    expect(res.documentCount).toBe(2)
+    expect(res.documents.length).toBe(2)
   })
 
   test('ignores sub-categories', async function () {
     const res = await fsToRegistry('/test/fs/case4')
-    expect(res.length).toBe(2)
-    expect(typeof res[0]).toBe('object')
-    expect(typeof res[1]).toBe('object')
-    expect((res[0] as any).documents.length).toBe(2)
-    expect((res[1] as any).documents.length).toBe(2)
+    expect(res.documentCount).toBe(4)
+    expect(res.documents.length).toBe(2)
+    expect(typeof res.documents[0]).toBe('object')
+    expect(typeof res.documents[1]).toBe('object')
+    expect((res.documents[0] as any).documents.length).toBe(2)
+    expect((res.documents[1] as any).documents.length).toBe(2)
   })
 
-  test('strips sort prefix', async function () {
-    const res = await fsToRegistry('/test/fs/case5')
-    expect(typeof res[0]).toBe('object')
-    expect((res[0] as any).category).toBe('cat')
-  })
+  test.todo('sorts files based on their prefix')
+  test.todo('keeps original sorting for mixed files not prefixed')
+})
+
+describe('registry validator', function () {
+  test.todo('recognizes valid registry')
+  test.todo('rejects on non existing document')
+  test.todo('rejects on non existing category')
+  test.todo('rejects on non existing document within category')
 })

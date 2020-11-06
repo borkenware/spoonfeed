@@ -26,39 +26,54 @@
  */
 
 export interface ConfigDocumentsFs {
-  source?: 'filesystem'
-  assets?: string
-  path?: string
+  source: 'filesystem'
+  assets: string
+  path: string
 }
 
 export interface ConfigDocumentsRegistry {
-  source?: 'registry'
-  assets?: string
+  source: 'registry'
+  assets: string
+  path: string
+  documents: RawDocumentRegistry
+}
+
+export interface RegistryCategory {
+  category: string
+  documents: string[]
+}
+
+export type RawDocumentRegistry = Array<RegistryCategory | string>
+
+export type DocumentRegistry = {
+  documentCount: number,
+  documents: RawDocumentRegistry
 }
 
 export interface ConfigUi {
-  title?: string
-  description?: string
-  copyright?: string | null
-  logo?: string | null
-  favicon?: string | null
-  acknowledgements?: boolean
+  title: string
+  description: string
+  copyright: string | null
+  logo: string | null
+  favicon: string | null
+  acknowledgements: boolean
 }
 
 export interface ConfigBuild {
-  target?: string
-  mode?: 'preact'
-  sourcemaps?: boolean
-  optimizeImg?: boolean
-  offline?: boolean
-  mangle?: boolean
+  target: string
+  mode: 'preact'
+  sourcemaps: boolean
+  optimizeImg: boolean
+  offline: boolean
+  mangle: boolean
+  split: boolean
 }
 
 export interface ConfigSsr {
-  generate?: boolean
-  redirectInsecure?: boolean
-  http2?: false
-  ssl?: {
+  generate: boolean
+  redirectInsecure: boolean
+  http2: false
+  ssl: null | {
     cert: string
     key: string
   }
@@ -76,8 +91,8 @@ export interface ConfigSsrH2 {
 
 export interface Config {
   workdir: string,
-  documents?: ConfigDocumentsFs | ConfigDocumentsRegistry,
-  ui?: ConfigUi
-  build?: ConfigBuild
-  ssr?: ConfigSsr | ConfigSsrH2
+  documents: ConfigDocumentsFs | ConfigDocumentsRegistry,
+  ui: ConfigUi
+  build: ConfigBuild
+  ssr: ConfigSsr | ConfigSsrH2
 }

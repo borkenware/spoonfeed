@@ -28,7 +28,7 @@
 import {
   MarkdownType, MarkdownAstTree, RawMarkdownNode,
   MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
-  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode
+  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode, DocumentResource
 } from './types'
 
 import { parseInline } from './util'
@@ -59,7 +59,7 @@ const InlineRuleSet = [
   { regexp: new RegExp(LINK, 'img'), type: MarkdownType.Link }
 ]
 
-function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNode {
+function parseLink (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownLinkNode | MarkdownAnchorNode {
   const content = node.content as string
   if (content.startsWith('[')) {
     const [ , label, href ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
@@ -67,14 +67,14 @@ function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNod
       return {
         type: MarkdownType.Anchor,
         anchor: href,
-        label: parse(label)
+        label: parseInlineMarkup(label, resources)
       }
     }
 
     return {
       type: MarkdownType.Link,
       href: href,
-      label: parse(label)
+      label: parseInlineMarkup(label, resources)
     }
   }
 
@@ -85,7 +85,7 @@ function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNod
   }
 }
 
-function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
+function parseDocument (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownDocumentNode {
   const content = node.content as string
   const [ , label, category, document, anchor ] = content.match(/\[((?:[^\]]|\\])+)]\(##([\.\!\\\w]*)(?:\/([\.\!\\\w]*))?(#[\.\!\/\\\w]*)?\)/i)!!
   return {
@@ -93,13 +93,18 @@ function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
     category: document ? category : null,
     document: document ? document : category,
     anchor: anchor || null,
-    label: parse(label)
+    label: parseInlineMarkup(label, resources)
   }
 }
 
-function parseImage (node: RawMarkdownNode): MarkdownImageNode {
+function parseImage (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownImageNode {
   const content = node.content as string
   const [ , label, src ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
+
+  if (src.startsWith('/')) {
+    resources.push({ type: 'image', path: src })
+  }
+
   return {
     type: MarkdownType.Image,
     alt: label,
@@ -107,7 +112,7 @@ function parseImage (node: RawMarkdownNode): MarkdownImageNode {
   }
 }
 
-function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
+function parseVideo (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownVideoNode {
   const content = (node.content as string).slice(4, -1)
   if (YT_RE.test(content)) {
     const [ ,,,,, id ] = content.match(YT_RE)!!
@@ -118,6 +123,10 @@ function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
     }
   }
 
+  if (content.startsWith('/')) {
+    resources.push({ type: 'video', path: content })
+  }
+
   return {
     type: MarkdownType.Video,
     kind: 'media',
@@ -125,26 +134,23 @@ function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
   }
 }
 
-function formatBlock (block: RawMarkdownNode): MarkdownNode {
+function formatBlock (block: RawMarkdownNode, resources: DocumentResource[]): MarkdownNode {
   switch (block.type) {
     case MarkdownType.Link:
     case MarkdownType.Anchor:
-      return parseLink(block)
+      return parseLink(block, resources)
     case MarkdownType.Document:
-      return parseDocument(block)
+      return parseDocument(block, resources)
     case MarkdownType.Image:
-      return parseImage(block)
+      return parseImage(block, resources)
     case MarkdownType.Video:
-      return parseVideo(block)
+      return parseVideo(block, resources)
   }
 
   return block as MarkdownNode
 }
 
-function formatBlocks (blocks: RawMarkdownNode[]): MarkdownNode[] {
-  return blocks.map(formatBlock) as MarkdownNode[]
-}
-
-export default function parse (markdown: string): MarkdownAstTree {
-  return formatBlocks(parseInline(InlineRuleSet, markdown))
+export function parseInlineMarkup (markdown: string, resources: DocumentResource[] = []): MarkdownNode[] {
+  const blocks = parseInline(InlineRuleSet, markdown)
+  return blocks.map((b) => formatBlock(b, resources))
 }

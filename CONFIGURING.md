@@ -30,10 +30,12 @@ The document source to use. Spoonfeed supports two document sources: `filesystem
 - `documents.assets` - string (default: `'assets'`)<br>
 Folder where documents are located, relative to the config file.
 
+- `documents.path` - string (default: `'docs'`)<br>
+Folder where documents are located, relative to the config file.
+
 ### Filesystem document source settings
-This is the default document source used by Spoonfeed. The specified folder will be scanned and the document tree
-will be built from this. You can force file sorting by prepending `[int]-` to the filename, it'll only be used for
-sorting and will then be stripped.
+This is the default document source used by Spoonfeed. The specified folder will be scanned and the documentation tree
+will be built from this. You can force file sorting by prepending `[int]-` to the filename.
 
 By default, categories name and slug are determined based on the folder name. If you want to use a different name, you
 can do so by adding a `manifest.json` file in the folder. It can also contain additional data that'll be passed to
@@ -41,16 +43,14 @@ the Preact component rendering time. Slug cannot be set.
 
 ###### Example manifest
 ```json
-{
-  "name": "My Awesome Category"
-}
+{ "name": "My Awesome Category" }
 ```
 
-- `documents.path` - string (default: `'docs'`)<br>
-Folder where documents are located, relative to the config file.
-
 ### Registry document source settings
-TBD
+- `documents.documents` - array<br>
+List of documents and categories
+
+<!-- todo: documentation needed -->
 
 ## Basic UI settings
 - `ui.title` - string (default: `'Documentation'`)<br>
@@ -116,10 +116,10 @@ Whether the HTTP server should be a HTTP/2 server. Requires a valid SSL certific
 - `ssr.redirectInsecure` - boolean (default: `false`)<br>
 Redirects plain HTTP requests to HTTPS. Requires a valid SSL certificate.
 
-- `ssr.ssl.key` - string (default: `null`)<br>
+- `ssr.ssl.key` - string<br>
 Path to the SSL private key. It'll be copied in the build target folder.
 
-- `ssr.ssl.cert` - string (default: `null`)<br>
+- `ssr.ssl.cert` - string<br>
 Path to the SSL certificate. It'll be copied in the build target folder.
 
 ### Why generate a server?

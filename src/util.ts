@@ -29,6 +29,8 @@ export type ExtendedType = 'string' | 'number' | 'bigint' |
   'boolean' | 'symbol' | 'undefined' | 'object' | 'function' |
   'array' | 'null' | 'nan'
 
+const units = [ 'ns', 'µs', 'ms', 's' ]
+
 export function extendedTypeof (obj: any): ExtendedType {
   let type: ExtendedType = typeof obj
   if (type === 'object' && Array.isArray(obj)) type = 'array'
@@ -40,4 +42,15 @@ export function extendedTypeof (obj: any): ExtendedType {
 
 export function hasOwnProperty<X extends {}, Y extends PropertyKey>(obj: X, prop: Y): obj is X & Record<Y, any> {
   return Object.prototype.hasOwnProperty.call(obj, prop)
+}
+
+export function formatDelta (from: bigint, to: bigint) {
+  let passes = 0
+  let delta = Number(to - from)
+  while (delta > 2000 && passes < 4) {
+    delta = delta / 1000
+    passes++
+  }
+
+  return `${delta.toFixed(2)} ${units[passes]}`
 }

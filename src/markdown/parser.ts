@@ -30,11 +30,11 @@ import {
   MarkdownCommentNode, MarkdownHeadingNode,
   MarkdownSimpleNode, MarkdownNoteNode, MarkdownAstTree,
   MarkdownListNode, MarkdownHttpNode, MarkdownHttpItemNode,
-  MarkdownCodeNode, MarkdownTableNode
+  MarkdownCodeNode, MarkdownTableNode, DocumentResource
 } from './types'
 
 import { parseBlocks } from './util'
-import parseInline from './inline'
+import { parseInlineMarkup } from './inline'
 
 function findTables (markdown: string) {
   const matches = markdown.matchAll(/^(?:\|[^|\n]+)+\|\n(?:\|(?::-{2,}:|-{2,}))+\|\n(?:(?:\|[^|\n]+)+\|(?:\n|$))+/img)
@@ -68,55 +68,55 @@ function parseComment (node: RawMarkdownNode): MarkdownCommentNode {
   }
 }
 
-function parseHeader (node: RawMarkdownNode): MarkdownHeadingNode {
+function parseHeader (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownHeadingNode {
   const content = node.content as string
   if (content.startsWith('#')) {
     const [ h, ...title ] = content.split(' ')
     return {
       type: MarkdownType.Heading,
       level: h.length,
-      content: parseInline(title.join(' '))
+      content: parseInlineMarkup(title.join(' '), resources)
     }
   }
 
   return {
     type: MarkdownType.Heading,
     level: content.endsWith('=') ? 1 : 2,
-    content: parseInline(content.split('\n')[0])
+    content: parseInlineMarkup(content.split('\n')[0], resources)
   }
 }
 
-function parseParagraph (node: RawMarkdownNode): MarkdownSimpleNode {
+function parseParagraph (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownSimpleNode {
   const content = node.content as string
   return {
     type: MarkdownType.Paragraph,
-    content: parseInline(content)
+    content: parseInlineMarkup(content, resources)
   }
 }
 
-function parseNote (node: RawMarkdownNode): MarkdownNoteNode {
+function parseNote (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownNoteNode {
   const content = node.content as string
   let [ kind, ...inner ] = content.split('\n')
   return {
     type: MarkdownType.Note,
     kind: kind.slice(1) as 'info' | 'warn' | 'danger',
-    content: parse(inner.map(l => l.slice(2)).join('\n'))
+    content: parseMarkup(inner.map(l => l.slice(2)).join('\n'), resources)
   }
 }
 
-function parseQuote (node: RawMarkdownNode): MarkdownSimpleNode {
+function parseQuote (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownSimpleNode {
   const content = node.content as string
   return {
     type: MarkdownType.Quote,
-    content: parse(content.split('\n').map(l => l.slice(2)).join('\n'))
+    content: parseMarkup(content.split('\n').map(l => l.slice(2)).join('\n'), resources)
   }
 }
 
-function parseList (node: RawMarkdownNode): MarkdownListNode {
-  return doParseList(node.content as string)
+function parseList (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownListNode {
+  return doParseList(node.content as string, resources)
 }
 
-function doParseList (list: string): MarkdownListNode {
+function doParseList (list: string, resources: DocumentResource[]): MarkdownListNode {
   const rawItems = list.split('\n').filter(Boolean)
   const content: (MarkdownListNode | MarkdownSimpleNode)[] = []
   const baseTab = rawItems[0].match(/^ +/)!![0].length
@@ -126,7 +126,7 @@ function doParseList (list: string): MarkdownListNode {
   for (const item of rawItems) {
     const tab = item.match(/^ +/)!![0].length
     if (accumulating && tab === baseTab) {
-      content.push(doParseList(buffer.join('\n')))
+      content.push(doParseList(buffer.join('\n'), resources))
       accumulating = false
       buffer = []
     } else if (!accumulating && tab > baseTab) {
@@ -134,7 +134,7 @@ function doParseList (list: string): MarkdownListNode {
     }
 
     if (accumulating) buffer.push(item)
-    else content.push({ type: MarkdownType.ListItem, content: parseInline(item.trim().slice(2).trim()) })
+    else content.push({ type: MarkdownType.ListItem, content: parseInlineMarkup(item.trim().slice(2).trim(), resources) })
   }
 
   return {
@@ -170,37 +170,37 @@ function parseCode (node: RawMarkdownNode): MarkdownCodeNode {
   }
 }
 
-function parseTable (node: RawMarkdownNode): MarkdownTableNode {
+function parseTable (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownTableNode {
   const content = node.content as string
   const [ head, align, ...rows ] = content.split('\n').filter(Boolean)
   return {
     type: MarkdownType.Table,
     centered: align.split('|').slice(1, -1).map(s => s.includes(':')),
-    thead: head.split('|').slice(1, -1).map(s => parseInline(s.trim())),
-    tbody: rows.map(row => row.split('|').slice(1, -1).map(s => parseInline(s.trim())))
+    thead: head.split('|').slice(1, -1).map(s => parseInlineMarkup(s.trim(), resources)),
+    tbody: rows.map(row => row.split('|').slice(1, -1).map(s => parseInlineMarkup(s.trim(), resources)))
   }
 }
 
-function formatBlock (node: RawMarkdownNode): MarkdownNode {
+function formatBlock (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownNode {
   switch (node.type) {
     case MarkdownType.Comment:
       return parseComment(node)
     case MarkdownType.Heading:
-      return parseHeader(node)
+      return parseHeader(node, resources)
     case MarkdownType.Paragraph:
-      return parseParagraph(node)
+      return parseParagraph(node, resources)
     case MarkdownType.Note:
-      return parseNote(node)
+      return parseNote(node, resources)
     case MarkdownType.Quote:
-      return parseQuote(node)
+      return parseQuote(node, resources)
     case MarkdownType.List:
-      return parseList(node)
+      return parseList(node, resources)
     case MarkdownType.Http:
       return parseHttp(node)
     case MarkdownType.CodeBlock:
       return parseCode(node)
     case MarkdownType.Table:
-      return parseTable(node)
+      return parseTable(node, resources)
     case MarkdownType.Ruler:
       return { type: MarkdownType.Ruler }
     /* istanbul ignore next */
@@ -209,10 +209,13 @@ function formatBlock (node: RawMarkdownNode): MarkdownNode {
   }
 }
 
-function formatBlocks (blocks: RawMarkdownNode[]): MarkdownNode[] {
-  return blocks.map(formatBlock) as MarkdownNode[]
+export function parseMarkup (markdown: string, resources: DocumentResource[] = []): MarkdownNode[] {
+  const blocks = parseBlocks(BlockRuleSet, markdown)
+  return blocks.map(b => formatBlock(b, resources))
 }
 
 export default function parse (markdown: string): MarkdownAstTree {
-  return formatBlocks(parseBlocks(BlockRuleSet, markdown))
+  const resources: DocumentResource[] = []
+  const tree = parseMarkup(markdown, resources)
+  return { resources, tree }
 }
