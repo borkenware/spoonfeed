@@ -25,7 +25,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { MarkdownType, RawMarkdownNode } from './types';
+import { hasOwnProperty } from '../util'
+import { MarkdownNode, MarkdownType, RawMarkdownNode } from './types'
 
 export interface ParserBlockRule {
   regexp: RegExp | ((markdown: string) => Record<string | number, any>[])
@@ -114,4 +115,31 @@ export function parseInline (ruleset: ParserInlineRule[], markdown: string): Raw
   }
 
   return res
+}
+
+function findTextNodes (nodes: (MarkdownNode | string)[]): string[] {
+  const found = []
+  for (const node of nodes) {
+    if (typeof node === 'string') found.push(node)
+    if (hasOwnProperty(node , 'content')) {
+      if (node.type === MarkdownType.Text && typeof node.content === 'string') found.push(node.content)
+      const items = Array.isArray(node.content) ? node.content : [ node.content ]
+      found.concat(findTextNodes(items))
+    }
+  }
+
+  return found
+}
+
+export function flattenToText (node: MarkdownNode | string): string | null {
+  if (typeof node === 'string') return node
+  if (!hasOwnProperty(node , 'content')) return null
+  if (node.type === MarkdownType.Text && typeof node.content === 'string') return node.content
+
+  const items = Array.isArray(node.content) ? node.content : [ node.content ]
+  return findTextNodes(items).join(' ')
+}
+
+export function slugToTitle (slug: string) {
+  return slug.split('-').map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join(' ')
 }

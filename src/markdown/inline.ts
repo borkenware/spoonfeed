@@ -26,8 +26,7 @@
  */
 
 import {
-  MarkdownType, MarkdownAstTree, RawMarkdownNode,
-  MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
+  MarkdownType, RawMarkdownNode, MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
   MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode, DocumentResource
 } from './types'
 
@@ -38,6 +37,7 @@ const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?[a-z0-9\\.\\-]+|(w
 const EMAIL = '(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))'
 
 const YT_RE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/i
+const ABS_RE = /^(https?:\/\/|www\.)/
 
 const InlineRuleSet = [
   { regexp: /(?:(?<!\\)\*){2}(.+?)(?:(?<!\\)\*){2}(?!\*)/img, type: MarkdownType.Bold, recurse: true, extract: 1 },
@@ -101,7 +101,7 @@ function parseImage (node: RawMarkdownNode, resources: DocumentResource[]): Mark
   const content = node.content as string
   const [ , label, src ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
 
-  if (src.startsWith('/')) {
+  if (!ABS_RE.test(src)) {
     resources.push({ type: 'image', path: src })
   }
 
@@ -123,7 +123,7 @@ function parseVideo (node: RawMarkdownNode, resources: DocumentResource[]): Mark
     }
   }
 
-  if (content.startsWith('/')) {
+  if (!ABS_RE.test(content)) {
     resources.push({ type: 'video', path: content })
   }
 
@@ -150,7 +150,7 @@ function formatBlock (block: RawMarkdownNode, resources: DocumentResource[]): Ma
   return block as MarkdownNode
 }
 
-export function parseInlineMarkup (markdown: string, resources: DocumentResource[] = []): MarkdownNode[] {
+export function parseInlineMarkup (markdown: string, resources: DocumentResource[]): MarkdownNode[] {
   const blocks = parseInline(InlineRuleSet, markdown)
   return blocks.map((b) => formatBlock(b, resources))
 }

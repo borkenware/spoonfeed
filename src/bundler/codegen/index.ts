@@ -25,76 +25,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export interface ConfigDocumentsFs {
-  source: 'filesystem'
-  assets: string
-  path: string
-}
+import { BuildMode } from '../../config/types'
+import { ParsedRegistry } from '../types'
 
-export interface ConfigDocumentsRegistry {
-  source: 'registry'
-  assets: string
-  path: string
-  documents: RawDocumentRegistry
-}
+import preact from './preact'
 
-export interface RegistryCategory {
-  category: string
-  documents: string[]
-}
-
-export type RawDocumentRegistry = Array<RegistryCategory | string>
-
-export type DocumentRegistry = {
-  documentCount: number,
-  documents: RawDocumentRegistry
-}
-
-export interface ConfigUi {
-  title: string
-  description: string
-  copyright: string | null
-  logo: string | null
-  favicon: string | null
-  acknowledgements: boolean
-}
-
-export type BuildMode = 'preact'
-
-export interface ConfigBuild {
-  target: string
-  mode: BuildMode
-  sourcemaps: boolean
-  optimizeImg: boolean
-  offline: boolean
-  mangle: boolean
-  split: boolean
-}
-
-export interface ConfigSsr {
-  generate: boolean
-  redirectInsecure: boolean
-  http2: false
-  ssl: null | {
-    cert: string
-    key: string
+export default function codegen (documents: ParsedRegistry, mode: BuildMode) {
+  if (mode === 'preact') {
+    return preact(documents)
   }
-}
-
-export interface ConfigSsrH2 {
-  generate?: boolean
-  redirectInsecure?: boolean
-  http2: true
-  ssl: {
-    cert: string
-    key: string
-  }
-}
-
-export interface Config {
-  workdir: string,
-  documents: ConfigDocumentsFs | ConfigDocumentsRegistry,
-  ui: ConfigUi
-  build: ConfigBuild
-  ssr: ConfigSsr | ConfigSsrH2
+  // todo: html, html+turbolinks
 }

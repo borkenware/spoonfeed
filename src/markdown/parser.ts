@@ -40,7 +40,7 @@ function findTables (markdown: string) {
   const matches = markdown.matchAll(/^(?:\|[^|\n]+)+\|\n(?:\|(?::-{2,}:|-{2,}))+\|\n(?:(?:\|[^|\n]+)+\|(?:\n|$))+/img)
   const filtered = []
   for (const match of matches) {
-    const pipes = match[0].split('\n').map(l => l.match(/(?<!\\)\|/g)!!.length)
+    const pipes = match[0].split('\n').filter(Boolean).map(l => l.match(/(?<!\\)\|/g)!!.length)
     if (pipes.every(p => pipes[0] === p)) filtered.push(match)
   }
   return filtered
@@ -119,12 +119,12 @@ function parseList (node: RawMarkdownNode, resources: DocumentResource[]): Markd
 function doParseList (list: string, resources: DocumentResource[]): MarkdownListNode {
   const rawItems = list.split('\n').filter(Boolean)
   const content: (MarkdownListNode | MarkdownSimpleNode)[] = []
-  const baseTab = rawItems[0].match(/^ +/)!![0].length
+  const baseTab = rawItems[0].match(/^ */)!![0].length
   let accumulating = false
   let buffer: string[] = []
 
   for (const item of rawItems) {
-    const tab = item.match(/^ +/)!![0].length
+    const tab = item.match(/^ */)!![0].length
     if (accumulating && tab === baseTab) {
       content.push(doParseList(buffer.join('\n'), resources))
       accumulating = false
@@ -139,7 +139,7 @@ function doParseList (list: string, resources: DocumentResource[]): MarkdownList
 
   return {
     type: MarkdownType.List,
-    ordered: !!list.match(/^ +\d/),
+    ordered: !!list.match(/^ *\d/),
     content
   }
 }
@@ -162,7 +162,7 @@ function parseHttp (node: RawMarkdownNode): MarkdownHttpNode {
 
 function parseCode (node: RawMarkdownNode): MarkdownCodeNode {
   const content = node.content as string
-  const [ , lang, code ] = content.match(/^```([^\n]*)\n(.*)\n```$/i)!!
+  const [ , lang, code ] = content.match(/^```([^\n]*)\n((?:.|\n)*)\n```$/i)!!
   return {
     type: MarkdownType.CodeBlock,
     language: lang || null,

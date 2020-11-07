@@ -31,4 +31,9 @@ describe('extended typeof', function () {
   test('handles arrays', () => expect(extendedTypeof([])).toBe('array'))
   test('handles null', () => expect(extendedTypeof(null)).toBe('null'))
   test('handles NaN', () => expect(extendedTypeof(NaN)).toBe('nan'))
+
+  describe('flatten nodes to text', function () {
+    test.todo('basic flattening')
+    test.todo('handles nested nodes')
+  })
 })

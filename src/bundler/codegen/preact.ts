@@ -25,22 +25,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { MarkdownAstTree } from '../markdown/types'
+import { ParsedRegistry } from '../types'
 
 interface PreactNode {
   tag: string
   component: boolean
 }
 
-function nodesToCode (nodes: PreactNode[]): string {
+export default function render (registry: ParsedRegistry): string {
   return ''
-}
-
-function astToNodes (ast: MarkdownAstTree): PreactNode[] {
-  return []
-}
-
-export default function render (ast: MarkdownAstTree): string {
-  // return ast |> astToNodes |> nodesToCode - I wish
-  return nodesToCode(astToNodes(ast))
 }

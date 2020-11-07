@@ -27,27 +27,13 @@
 
 import { join } from 'path'
 import { existsSync } from 'fs'
-import { cursorTo } from 'readline'
+import * as log from '../log'
 import readConfig from '../config'
 import { Config, DocumentRegistry } from '../config/types'
 import fsToRegistry, { validateRegistry } from '../filesystem'
 import { formatDelta } from '../util'
 
-let point: bigint
-let prevStep: string | null = null
-let cur = 0
-function logStep (step: string | null) {
-  if (prevStep) {
-    cursorTo(process.stdout, 0)
-    console.log(`Step ${cur} ${prevStep} - Done in ${formatDelta(point, process.hrtime.bigint())}`)
-  }
-
-  if (step) {
-    prevStep = step
-    process.stdout.write(`Step ${++cur} ${step}...`)
-    point = process.hrtime.bigint()
-  }
-}
+import parseDocuments from './parse'
 
 function resolveRegistry (config: Config): Promise<DocumentRegistry> {
   const path = join(config.workdir, config.documents.path)
@@ -70,27 +56,41 @@ function resolveRegistry (config: Config): Promise<DocumentRegistry> {
   }
 }
 
-export default async function bundle () {
-  const start = process.hrtime.bigint()
+async function doBundle () {
   const config = readConfig()
   const registry = await resolveRegistry(config)
-  console.log(`Found ${registry.documentCount} documents to bundle to ${config.build.mode}.`)
+  log.debug(`Found ${registry.documentCount} documents to bundle to ${config.build.mode}.`)
 
-  logStep('Parsing markdown files')
+  log.debug('Parsing markdown files')
+  const categories = await parseDocuments(registry)
+  categories.resources = categories.resources.map(r => ({ ...r, path: join(config.documents.assets, r.path) }))
+
+  // console.log(categories.resources)
+
+  log.debug('Generating code')
   // todo
 
-  logStep('Generating code')
-  // todo
-
-  logStep('Assemble app')
+  log.debug('Assemble app')
   // todo
 
   if (config.ssr.generate) {
-    logStep('Generate server')
+    log.debug('Generate server')
     // todo
   }
 
-  logStep(null)
-  const end = process.hrtime.bigint()
-  console.log(`Success! Took ${formatDelta(start, end)}`)
+  log.info('test log')
+  log.warn('test log')
+  log.error('test log')
+}
+
+export default async function bundle () {
+  const start = process.hrtime.bigint()
+  try {
+    await doBundle()
+  } catch (e) {
+    log.error('Failed to build the documentation!', e)
+  } finally {
+    const end = process.hrtime.bigint()
+    log.success(`Took ${formatDelta(start, end)}`)
+  }
 }

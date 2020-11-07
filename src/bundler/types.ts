@@ -25,76 +25,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export interface ConfigDocumentsFs {
-  source: 'filesystem'
-  assets: string
-  path: string
-}
+import { DocumentResource, MarkdownNode } from '../markdown/types'
 
-export interface ConfigDocumentsRegistry {
-  source: 'registry'
-  assets: string
-  path: string
-  documents: RawDocumentRegistry
-}
-
-export interface RegistryCategory {
-  category: string
-  documents: string[]
-}
-
-export type RawDocumentRegistry = Array<RegistryCategory | string>
-
-export type DocumentRegistry = {
-  documentCount: number,
-  documents: RawDocumentRegistry
-}
-
-export interface ConfigUi {
+export interface ParsedDocument {
   title: string
-  description: string
-  copyright: string | null
-  logo: string | null
-  favicon: string | null
-  acknowledgements: boolean
+  slug: string
+  nodes: MarkdownNode[]
 }
 
-export type BuildMode = 'preact'
-
-export interface ConfigBuild {
-  target: string
-  mode: BuildMode
-  sourcemaps: boolean
-  optimizeImg: boolean
-  offline: boolean
-  mangle: boolean
-  split: boolean
+export interface ParsedCategories {
+  title: string
+  slug: string
+  documents: ParsedDocument[]
 }
 
-export interface ConfigSsr {
-  generate: boolean
-  redirectInsecure: boolean
-  http2: false
-  ssl: null | {
-    cert: string
-    key: string
-  }
-}
-
-export interface ConfigSsrH2 {
-  generate?: boolean
-  redirectInsecure?: boolean
-  http2: true
-  ssl: {
-    cert: string
-    key: string
-  }
-}
-
-export interface Config {
-  workdir: string,
-  documents: ConfigDocumentsFs | ConfigDocumentsRegistry,
-  ui: ConfigUi
-  build: ConfigBuild
-  ssr: ConfigSsr | ConfigSsrH2
+export interface ParsedRegistry {
+  resources: DocumentResource[]
+  categories: ParsedCategories[]
 }

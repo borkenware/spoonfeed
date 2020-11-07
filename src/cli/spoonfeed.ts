@@ -28,12 +28,15 @@
  */
 
 import bundle from '../bundler'
+import { setDebug } from '../log'
 
 // We use require here so it doesn't get bundled by TS
 const { version } = require('../../package.json')
 
 console.log(`Spoonfeed v${version}`, '\n')
-const command = process.argv[process.argv.length - 1] 
+if (process.argv.includes('--debug')) setDebug(true)
+const command = process.argv.length > 2 ? process.argv[process.argv.length - 1] : ''
+
 switch (command) {
   case 'bundle':
     bundle()
@@ -44,17 +47,29 @@ switch (command) {
   case 'about':
     console.log('Proudly built by Borkenware.')
     // some day -- console.log('Proudly built by Borkenware, and ##{CONTRIBUTORS} contributors.')
-    console.log(`Spoonfeed is Open ${Math.random().toFixed(3) === '0.420' ? 'Sauce' : 'Source'} Software, licensed under BSD-3-Clause.`)
+    console.log(`Spoonfeed is Honest Open ${Math.random().toFixed(3) === '0.420' ? 'Sauce' : 'Source'} Software, licensed under BSD-3-Clause.`)
     console.log('https://github.com/borkenware/spoonfeed')
     break
   default:
-    console.log(`Invalid usage! Unknown command "${command}".`)
-    console.log('Valid usages are:')
+    if (command && command !== 'help') {
+      console.log(`Invalid usage! Unknown command "${command}".`)
+      console.log('Valid usages are:\n')
+    }
+
+    console.log('spoonfeed [arguments] <command>\n')
+
     console.log(' - spoonfeed bundle')
     console.log('   Bundles the documentation')
+    console.log('   Enable debug logging with --debug')
+    console.log()
     // console.log(' - spoonfeed serve')
     // console.log('   Starts the dev server')
+    // console.log('   Enable debug logging with --debug')
+    // console.log()
     console.log(' - spoonfeed about')
     console.log('   Prints information about Spoonfeed')
+    console.log()
+    console.log(' - spoonfeed help')
+    console.log('   Shows this help message')
     break
 }

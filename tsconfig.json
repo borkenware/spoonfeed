@@ -7,7 +7,6 @@
     "allowJs": false,
     "module": "commonjs",
     "target": "es6",
-    "baseUrl": "./src",
     "lib": [ "es2020.string", "es2020.bigint" ],
     "jsx": "preserve",
     "jsxFactory": "h",

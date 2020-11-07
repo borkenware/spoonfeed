@@ -25,76 +25,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export interface ConfigDocumentsFs {
-  source: 'filesystem'
-  assets: string
-  path: string
+let logDebug = false
+
+const Prefixes = {
+  DEBUG: `\x1b[47m\x1b[30m DEBUG \x1b[0m`,
+  INFO: `\x1b[44m\x1b[30m INFO \x1b[0m`,
+  SUCCESS: `\x1b[42m\x1b[30m SUCCESS \x1b[0m`,
+  WARNING: `\x1b[43m\x1b[30m WARN \x1b[0m`,
+  ERROR: `\x1b[41m\x1b[30m ERROR \x1b[0m`
 }
 
-export interface ConfigDocumentsRegistry {
-  source: 'registry'
-  assets: string
-  path: string
-  documents: RawDocumentRegistry
-}
+export function setDebug (d: boolean) { logDebug = d }
 
-export interface RegistryCategory {
-  category: string
-  documents: string[]
-}
-
-export type RawDocumentRegistry = Array<RegistryCategory | string>
-
-export type DocumentRegistry = {
-  documentCount: number,
-  documents: RawDocumentRegistry
-}
-
-export interface ConfigUi {
-  title: string
-  description: string
-  copyright: string | null
-  logo: string | null
-  favicon: string | null
-  acknowledgements: boolean
-}
-
-export type BuildMode = 'preact'
-
-export interface ConfigBuild {
-  target: string
-  mode: BuildMode
-  sourcemaps: boolean
-  optimizeImg: boolean
-  offline: boolean
-  mangle: boolean
-  split: boolean
-}
-
-export interface ConfigSsr {
-  generate: boolean
-  redirectInsecure: boolean
-  http2: false
-  ssl: null | {
-    cert: string
-    key: string
+export function debug (message: string) {
+  if (logDebug) {
+    console.log(`${Prefixes.DEBUG}  ${message}`)
   }
 }
 
-export interface ConfigSsrH2 {
-  generate?: boolean
-  redirectInsecure?: boolean
-  http2: true
-  ssl: {
-    cert: string
-    key: string
-  }
+export function info (message: string) {
+  console.log(`${Prefixes.INFO}  ${message}`)
 }
 
-export interface Config {
-  workdir: string,
-  documents: ConfigDocumentsFs | ConfigDocumentsRegistry,
-  ui: ConfigUi
-  build: ConfigBuild
-  ssr: ConfigSsr | ConfigSsrH2
+export function success (message: string) {
+  console.log(`${Prefixes.SUCCESS}  ${message}`)
+}
+
+export function warn (message: string) {
+  console.log(`${Prefixes.WARNING}  ${message}`)
+}
+
+export function error (message: string, error?: Error) {
+  console.log(`${Prefixes.ERROR}  ${message}`)
 }
