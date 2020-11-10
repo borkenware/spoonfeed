@@ -33,19 +33,20 @@ import { Config, DocumentRegistry } from '../config/types'
 import fsToRegistry, { validateRegistry } from '../filesystem'
 import { formatDelta } from '../util'
 
+import BundlerError from './error'
 import parseDocuments from './parse'
 
 function resolveRegistry (config: Config): Promise<DocumentRegistry> {
   const path = join(config.workdir, config.documents.path)
   if (config.documents.source === 'filesystem') {
     if (!existsSync(path)) {
-      throw new Error(`Invalid configuration! The specified path does not exist! ${path}`)
+      throw new BundlerError(`Invalid configuration! The specified path does not exist! ${path}`)
     }
 
     return fsToRegistry(path)
   } else {
     if (!validateRegistry(path, config.documents.documents)) {
-      throw new Error('Invalid documentation! Some documents in the registry could not be found.')
+      throw new BundlerError('Invalid documentation! Some documents in the registry could not be found.')
     }
 
     const documentCount = config.documents.documents
@@ -77,20 +78,18 @@ async function doBundle () {
     log.debug('Generate server')
     // todo
   }
-
-  log.info('test log')
-  log.warn('test log')
-  log.error('test log')
 }
 
 export default async function bundle () {
   const start = process.hrtime.bigint()
   try {
     await doBundle()
+    log.success('Documentation built successfully!')
   } catch (e) {
-    log.error('Failed to build the documentation!', e)
+    if (e instanceof BundlerError) log.error(e.message)
+    else log.error('Failed to build the documentation!', e)
   } finally {
     const end = process.hrtime.bigint()
-    log.success(`Took ${formatDelta(start, end)}`)
+    log.info(`Took ${formatDelta(start, end)}`)
   }
 }
