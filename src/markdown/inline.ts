@@ -27,7 +27,7 @@
 
 import {
   MarkdownType, RawMarkdownNode, MarkdownNode, MarkdownLinkNode, MarkdownAnchorNode,
-  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode, DocumentResource
+  MarkdownDocumentNode, MarkdownImageNode, MarkdownVideoNode
 } from './types'
 
 import { parseInline } from './util'
@@ -37,7 +37,6 @@ const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?[a-z0-9\\.\\-]+|(w
 const EMAIL = '(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))'
 
 const YT_RE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/i
-const ABS_RE = /^(https?:\/\/|www\.)/
 
 const InlineRuleSet = [
   { regexp: /(?:(?<!\\)\*){2}(.+?)(?:(?<!\\)\*){2}(?!\*)/img, type: MarkdownType.Bold, recurse: true, extract: 1 },
@@ -59,7 +58,7 @@ const InlineRuleSet = [
   { regexp: new RegExp(LINK, 'img'), type: MarkdownType.Link }
 ]
 
-function parseLink (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownLinkNode | MarkdownAnchorNode {
+function parseLink (node: RawMarkdownNode): MarkdownLinkNode | MarkdownAnchorNode {
   const content = node.content as string
   if (content.startsWith('[')) {
     const [ , label, href ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
@@ -67,14 +66,14 @@ function parseLink (node: RawMarkdownNode, resources: DocumentResource[]): Markd
       return {
         type: MarkdownType.Anchor,
         anchor: href,
-        label: parseInlineMarkup(label, resources)
+        label: parseInlineMarkup(label)
       }
     }
 
     return {
       type: MarkdownType.Link,
       href: href,
-      label: parseInlineMarkup(label, resources)
+      label: parseInlineMarkup(label)
     }
   }
 
@@ -85,7 +84,7 @@ function parseLink (node: RawMarkdownNode, resources: DocumentResource[]): Markd
   }
 }
 
-function parseDocument (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownDocumentNode {
+function parseDocument (node: RawMarkdownNode): MarkdownDocumentNode {
   const content = node.content as string
   const [ , label, category, document, anchor ] = content.match(/\[((?:[^\]]|\\])+)]\(##([\.\!\\\w]*)(?:\/([\.\!\\\w]*))?(#[\.\!\/\\\w]*)?\)/i)!!
   return {
@@ -93,17 +92,13 @@ function parseDocument (node: RawMarkdownNode, resources: DocumentResource[]): M
     category: document ? category : null,
     document: document ? document : category,
     anchor: anchor || null,
-    label: parseInlineMarkup(label, resources)
+    label: parseInlineMarkup(label)
   }
 }
 
-function parseImage (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownImageNode {
+function parseImage (node: RawMarkdownNode): MarkdownImageNode {
   const content = node.content as string
   const [ , label, src ] = content.match(/\[(.+?(?<!\\))]\((.+)\)/i)!!
-
-  if (!ABS_RE.test(src)) {
-    resources.push({ type: 'image', path: src })
-  }
 
   return {
     type: MarkdownType.Image,
@@ -112,7 +107,7 @@ function parseImage (node: RawMarkdownNode, resources: DocumentResource[]): Mark
   }
 }
 
-function parseVideo (node: RawMarkdownNode, resources: DocumentResource[]): MarkdownVideoNode {
+function parseVideo (node: RawMarkdownNode): MarkdownVideoNode {
   const content = (node.content as string).slice(4, -1)
   if (YT_RE.test(content)) {
     const [ ,,,,, id ] = content.match(YT_RE)!!
@@ -123,10 +118,6 @@ function parseVideo (node: RawMarkdownNode, resources: DocumentResource[]): Mark
     }
   }
 
-  if (!ABS_RE.test(content)) {
-    resources.push({ type: 'video', path: content })
-  }
-
   return {
     type: MarkdownType.Video,
     kind: 'media',
@@ -134,23 +125,23 @@ function parseVideo (node: RawMarkdownNode, resources: DocumentResource[]): Mark
   }
 }
 
-function formatBlock (block: RawMarkdownNode, resources: DocumentResource[]): MarkdownNode {
+function formatBlock (block: RawMarkdownNode): MarkdownNode {
   switch (block.type) {
     case MarkdownType.Link:
     case MarkdownType.Anchor:
-      return parseLink(block, resources)
+      return parseLink(block)
     case MarkdownType.Document:
-      return parseDocument(block, resources)
+      return parseDocument(block)
     case MarkdownType.Image:
-      return parseImage(block, resources)
+      return parseImage(block)
     case MarkdownType.Video:
-      return parseVideo(block, resources)
+      return parseVideo(block)
   }
 
   return block as MarkdownNode
 }
 
-export function parseInlineMarkup (markdown: string, resources: DocumentResource[]): MarkdownNode[] {
+export function parseInlineMarkup (markdown: string): MarkdownNode[] {
   const blocks = parseInline(InlineRuleSet, markdown)
-  return blocks.map((b) => formatBlock(b, resources))
+  return blocks.map((b) => formatBlock(b))
 }

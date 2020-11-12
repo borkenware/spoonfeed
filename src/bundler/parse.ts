@@ -27,10 +27,10 @@
 
 import { readFile } from 'fs/promises'
 import { basename } from 'path'
-import { DocumentRegistry } from '../config/types'
-import { DocumentResource, MarkdownType } from '../markdown/types'
-import { flattenToText, slugToTitle } from '../markdown/util'
 import parse from '../markdown/parser'
+import { flattenToText, slugToTitle } from '../markdown/util'
+import { MarkdownType } from '../markdown/types'
+import { DocumentRegistry } from '../config/types'
 
 import { ParsedCategories, ParsedDocument, ParsedRegistry } from './types'
 
@@ -38,7 +38,7 @@ function sluggify (string: string) {
   return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '').replace(/_/g, '-')
 }
 
-async function parseFile (file: string): Promise<[ DocumentResource[], ParsedDocument ]> {
+async function parseFile (file: string): Promise<ParsedDocument> {
   const markdown = await readFile(file, 'utf8')
   const parsed = parse(markdown)
   const header = parsed.tree.find(n => n.type === MarkdownType.Heading && n.level === 1)
@@ -48,21 +48,16 @@ async function parseFile (file: string): Promise<[ DocumentResource[], ParsedDoc
     throw new Error(`Invalid document! Document at ${file} did not contain a Heading 1, or no text could be extracted from it.`)
   }
 
-  return [
-    parsed.resources,
-    { title, slug: sluggify(basename(file)), nodes: parsed.tree }
-  ]
+  return { title, slug: sluggify(basename(file)), nodes: parsed.tree }
 }
 
 export default async function parseDocuments (reg: DocumentRegistry): Promise<ParsedRegistry> {
-  let resources: DocumentResource[] = []
   const categories: ParsedCategories[] = []
   const uncategorized: ParsedCategories = { title: '',  slug: '', documents: [] }
 
   for (const item of reg.documents) {
     if (typeof item === 'string') {
-      const [ res, doc ] = await parseFile(item)
-      resources.push(...res)
+      const doc = await parseFile(item)
       uncategorized.documents.push(doc)
       continue
     }
@@ -71,8 +66,7 @@ export default async function parseDocuments (reg: DocumentRegistry): Promise<Pa
     // todo: category manifest
     const category: ParsedCategories = { title: slugToTitle(slug), slug, documents: [] }
     for (const d of item.documents) {
-      const [ res, doc ] = await parseFile(d)
-      resources.push(...res)
+      const doc = await parseFile(d)
       category.documents.push(doc)
     }
     categories.push(category)
@@ -82,5 +76,5 @@ export default async function parseDocuments (reg: DocumentRegistry): Promise<Pa
     categories.unshift(uncategorized)
   }
 
-  return { resources, categories }
+  return { categories }
 }

@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { DocumentResource, MarkdownNode } from '../markdown/types'
+import { MarkdownNode } from '../markdown/types'
 
 export interface ParsedDocument {
   title: string
@@ -40,6 +40,5 @@ export interface ParsedCategories {
 }
 
 export interface ParsedRegistry {
-  resources: DocumentResource[]
   categories: ParsedCategories[]
 }

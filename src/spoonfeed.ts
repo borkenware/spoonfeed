@@ -27,11 +27,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import bundle from '../bundler'
-import { setDebug } from '../log'
+import bundle from './bundler'
+import { setDebug } from './log'
 
 // We use require here so it doesn't get bundled by TS
-const { version } = require('../../package.json')
+const { version } = require('../package.json')
 
 console.log(`Spoonfeed v${version}`, '\n')
 if (process.argv.includes('--debug')) setDebug(true)

@@ -64,9 +64,6 @@ async function doBundle () {
 
   log.debug('Parsing markdown files')
   const categories = await parseDocuments(registry)
-  categories.resources = categories.resources.map(r => ({ ...r, path: join(config.documents.assets, r.path) }))
-
-  // console.log(categories.resources)
 
   log.debug('Generating code')
   // todo

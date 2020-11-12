@@ -159,12 +159,4 @@ export type MarkdownNode = MarkdownSimpleNode | MarkdownEmptyNode | MarkdownComm
   MarkdownTableNode | MarkdownLinkNode | MarkdownAnchorNode | MarkdownDocumentNode |
   MarkdownImageNode | MarkdownVideoNode
 
-export interface DocumentResource {
-  type: 'image' | 'video'
-  path: string
-}
-
-export type MarkdownAstTree = {
-  resources: DocumentResource[]
-  tree: MarkdownNode[]
-}
+export type MarkdownAstTree = { tree: MarkdownNode[] }

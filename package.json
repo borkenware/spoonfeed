@@ -4,10 +4,10 @@
   "description": "Generate beautiful documentation portals in seconds from easy-to-edit markdown files.",
   "main": "index.js",
   "repository": "git@github.com:borkenware/spoonfeed.git",
-  "author": "Bowser65 <bowoser@borkenware.com>",
+  "author": "Cynthia <cyyynthia@borkenware.com>",
   "license": "BSD-3-Clause",
   "bin": {
-    "spoonfeed": "./dist/cli/spoonfeed.js"
+    "spoonfeed": "./dist/spoonfeed.js"
   },
   "scripts": {
     "test": "jest",
