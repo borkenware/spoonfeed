@@ -25,16 +25,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { join } from 'path'
 import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
+import { join, basename } from 'path'
+
 import * as log from '../log'
 import readConfig from '../config'
-import { Config, DocumentRegistry } from '../config/types'
+import parseMarkdown from '../markdown/parser'
 import fsToRegistry, { validateRegistry } from '../filesystem'
-import { formatDelta } from '../util'
-
+import { formatDelta, sluggify, slugToTitle } from '../util'
+import { flattenToText } from '../markdown/util'
+import codegen from './codegen'
 import BundlerError from './error'
-import parseDocuments from './parse'
+
+import { MarkdownType } from '../markdown/types'
+import { BuildMode, Config, DocumentRegistry } from '../config/types'
+
+export interface RenderedDocument {
+  title: string
+  slug: string
+  category?: string
+  parts: string[]
+  code: string
+}
+
+export interface RenderedCategory {
+  title: string
+  slug: string
+}
 
 function resolveRegistry (config: Config): Promise<DocumentRegistry> {
   const path = join(config.workdir, config.documents.path)
@@ -57,16 +75,51 @@ function resolveRegistry (config: Config): Promise<DocumentRegistry> {
   }
 }
 
+async function parseFile (file: string, mode: BuildMode): Promise<RenderedDocument> {
+  const md = await readFile(file, 'utf8')
+  const parsed = parseMarkdown(md)
+  const header = parsed.tree.find(n => n.type === MarkdownType.Heading && n.level === 1)
+  const parts = parsed.tree.filter(n => n.type === MarkdownType.Heading && n.level === 2)
+    .map(flattenToText).filter(Boolean) as string[]
+
+  const title = header ? flattenToText(header) : null
+
+  if (!header || !title || !title.trim()) {
+    throw new Error(`Invalid document! Document at ${file} did not contain a Heading 1, or no text could be extracted from it.`)
+  }
+
+  return {
+    title,
+    parts,
+    slug: sluggify(basename(file)),
+    code: codegen(parsed.tree, mode)
+  }
+}
+
 async function doBundle () {
   const config = readConfig()
   const registry = await resolveRegistry(config)
   log.debug(`Found ${registry.documentCount} documents to bundle to ${config.build.mode}.`)
 
   log.debug('Parsing markdown files')
-  const categories = await parseDocuments(registry)
+  const documents: RenderedDocument[] = []
+  const categories: RenderedCategory[] = []
+  for (const item of registry.documents) {
+    if (typeof item === 'string') {
+      const doc = await parseFile(item, config.build.mode)
+      documents.push(doc)
+      continue
+    }
 
-  log.debug('Generating code')
-  // todo
+    // todo: category manifest
+    const slug = sluggify(item.category)
+    categories.push({ title: slugToTitle(slug), slug })
+    for (const d of item.documents) {
+      const doc = await parseFile(d, config.build.mode)
+      doc.category = slug
+      documents.push(doc)
+    }
+  }
 
   log.debug('Assemble app')
   // todo
@@ -80,6 +133,7 @@ async function doBundle () {
 export default async function bundle () {
   const start = process.hrtime.bigint()
   try {
+    log.info('Bundling...')
     await doBundle()
     log.success('Documentation built successfully!')
   } catch (e) {

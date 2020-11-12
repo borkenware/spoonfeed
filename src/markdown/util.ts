@@ -139,7 +139,3 @@ export function flattenToText (node: MarkdownNode | string): string | null {
   const items = Array.isArray(node.content) ? node.content : [ node.content ]
   return findTextNodes(items).join(' ')
 }
-
-export function slugToTitle (slug: string) {
-  return slug.split('-').map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join(' ')
-}

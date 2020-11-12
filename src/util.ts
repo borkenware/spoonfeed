@@ -54,3 +54,11 @@ export function formatDelta (from: bigint, to: bigint) {
 
   return `${delta.toFixed(2)} ${units[passes]}`
 }
+
+export function sluggify (string: string) {
+  return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '').replace(/_/g, '-')
+}
+
+export function slugToTitle (slug: string) {
+  return slug.split('-').map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join(' ')
+}

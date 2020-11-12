@@ -25,13 +25,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ParsedRegistry } from '../types'
+import { MarkdownNode, MarkdownType } from '../../markdown/types'
 
-interface PreactNode {
-  tag: string
-  component: boolean
-}
+export default function render (markdown: MarkdownNode[]): string {
+  const lol = JSON.stringify(markdown)
+  return `
+    import { h } from 'preact'
 
-export default function render (registry: ParsedRegistry): string {
-  return ''
+    export default function () {
+      console.log(${lol})
+      return h('div', null, 'in theory there should be a document here but budget was low')
+    }
+  `
 }

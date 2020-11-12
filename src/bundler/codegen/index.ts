@@ -26,13 +26,15 @@
  */
 
 import { BuildMode } from '../../config/types'
-import { ParsedRegistry } from '../types'
+import { MarkdownNode } from '../../markdown/types'
 
 import preact from './preact'
 
-export default function codegen (documents: ParsedRegistry, mode: BuildMode) {
+export default function codegen (documents: MarkdownNode[], mode: BuildMode): string {
   if (mode === 'preact') {
     return preact(documents)
   }
+
   // todo: html, html+turbolinks
+  throw new Error('Invalid mode?')
 }
