@@ -60,7 +60,8 @@ export function formatDelta (from: bigint, to: bigint) {
 }
 
 export function sluggify (string: string) {
-  return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '').replace(/_/g, '-').toLowerCase()
+  return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '')
+    .replace(/[^a-z]+/ig, '-').replace(/(^-+|-+$)/ig, '').toLowerCase()
 }
 
 export function slugToTitle (slug: string) {

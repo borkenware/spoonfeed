@@ -25,14 +25,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { h } from 'preact'
-import categories from '@sf/categories'
+/** @jsx h */
+import { h, Fragment } from 'preact'
+import { Link } from 'preact-router/match'
+import categories, { DocumentMeta } from '@sf/categories'
+
+function Item (props: DocumentMeta & { category?: string }) {
+  const path = `/${props.category ? `${props.category}/` : ''}${props.slug}`
+  return (
+    <Link activeClassName='active' className='sidebar-item' href={path}>
+      {props.title}
+    </Link>
+  )
+}
+
+function Items (props: { documents: DocumentMeta[], category?: string }) {
+  return (
+    <Fragment>
+      {props.documents.map(doc => <Item category={props.category} {...doc}/>)}
+    </Fragment>
+  )
+}
 
 export default function Sidebar () {
-  console.log('sidebar', categories)
   return (
-    <div>
-      Sidebar!
+    <div className='sidebar scrollable'>
+      <div className='sidebar-logo'>
+        <span>Logo here</span> {/* todo */}
+      </div>
+
+      <Items documents={categories.uncategorized}/>
+      {categories.categories.map(cat => (
+        <Fragment>
+          <h3 className='sidebar-category'>{cat.title}</h3>
+          <Items category={cat.slug} documents={cat.documents}/>
+        </Fragment>
+      ))}
     </div>
   )
 }

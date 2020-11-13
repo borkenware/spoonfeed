@@ -104,6 +104,9 @@ Whether exports should be mangled or not. Only applicable for `preact` builds.
 Whether Spoonfeed should make use of code splitting or not. Reduces the initial bundle size. Only applicable for
 `preact` builds.
 
+- `build.devtools` - boolean (default: `true`)<br>
+Whether Spoonfeed should include Preact devtools or not. Disabling it will result in a smaller bundle.
+
 ## Pre-rendering server-side options
 **Note**: Those will only be used if you set your app to compile to a Preact app.
 

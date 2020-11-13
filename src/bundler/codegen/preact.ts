@@ -25,16 +25,131 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { MarkdownNode, MarkdownType } from '../../markdown/types'
+import { MarkdownHeadingNode, MarkdownNode, MarkdownType } from '../../markdown/types'
+
+interface PreactNode {
+  tag: string
+  component: boolean
+  props?: object
+  children?: Array<PreactNode | string>
+}
+
+type Imports = Record<string, string>
+
+/*
+special cases:
+case MarkdownType.ListItem:
+case MarkdownType.HttpMethod:
+case MarkdownType.HttpParam:
+*/
+
+const BasicTags: Record<string, string> = {
+  [MarkdownType.Paragraph]: 'p',
+  [MarkdownType.Quote]: 'blockquote',
+  [MarkdownType.Bold]: 'b',
+  [MarkdownType.Italic]: 'i',
+  [MarkdownType.Underline]: 'u',
+  [MarkdownType.StrikeThrough]: 's',
+  [MarkdownType.Code]: 'code',
+  [MarkdownType.Ruler]: 'hr',
+  [MarkdownType.LineBreak]: 'br'
+}
+
+function toCode (nodes: Array<PreactNode | string>): string {
+  const components: string[] = []
+  for (const node of nodes) {
+    if (typeof node === 'string') {
+      components.push(`'${node.replace(/'/g, '\\\'')}'`)
+      continue
+    }
+    let code = 'h('
+    code += `${node.component ? node.tag : `'${node.tag}'`},`
+    code += `${node.props ? JSON.stringify(node.props) : 'null'}`
+    if (node.children) code += `,${toCode(node.children)}`
+    code += ')'
+    components.push(code)
+  }
+  return components.join(',')
+}
+
+function parseBasicNode (node: MarkdownNode, imports: Imports): PreactNode | string {
+  if (node.type === MarkdownType.Text) return node.content as string
+  const tag = node.type === MarkdownType.Heading ? `h${node.level}` : BasicTags[node.type]
+  if (node.type === MarkdownType.Ruler || node.type === MarkdownType.LineBreak) {
+    return { tag, component: false }
+  }
+
+  const content = (node as any).content
+  return { tag, component: false, children: typeof content === 'string' ? [ content ] : parseTree(content, imports) }
+}
+
+function parseHeading (node: MarkdownHeadingNode, imports: Imports): PreactNode {
+  // import Heading from ???
+  return { tag: 'mark', component: false, children: [ '--heading--' ] }
+}
+
+function parseTree (markdown: MarkdownNode[], imports: Imports): Array<PreactNode | string> {
+  const res: Array<PreactNode | string> = []
+  for (const node of markdown) {
+    switch (node.type) {
+      case MarkdownType.Paragraph:
+      case MarkdownType.Quote:
+      case MarkdownType.Text:
+      case MarkdownType.Bold:
+      case MarkdownType.Italic:
+      case MarkdownType.Underline:
+      case MarkdownType.StrikeThrough:
+      case MarkdownType.Code:
+      case MarkdownType.Ruler:
+      case MarkdownType.LineBreak:
+        res.push(parseBasicNode(node, imports))
+        break
+      case MarkdownType.Heading:
+        res.push(parseHeading(node as MarkdownHeadingNode, imports))
+        break
+      case MarkdownType.Link:
+      case MarkdownType.Email:
+      case MarkdownType.Anchor:
+      case MarkdownType.Document:
+        res.push({ tag: 'mark', component: false, children: [ '--anchor--' ] })
+        // Link node
+        break
+      case MarkdownType.Note:
+        res.push({ tag: 'mark', component: false, children: [ '--note--' ] })
+        break
+      case MarkdownType.CodeBlock:
+        res.push({ tag: 'mark', component: false, children: [ '--codeblock--' ] })
+        break
+      case MarkdownType.List:
+        res.push({ tag: 'mark', component: false, children: [ '--list--' ] })
+        break
+      case MarkdownType.Http:
+        res.push({ tag: 'mark', component: false, children: [ '--http--' ] })
+        break
+      case MarkdownType.Table:
+        res.push({ tag: 'mark', component: false, children: [ '--table--' ] })
+        break
+      case MarkdownType.Image:
+      case MarkdownType.Video:
+        res.push({ tag: 'mark', component: false, children: [ '--media--' ] })
+        break
+    }
+  }
+
+  return res
+}
 
 export default function render (markdown: MarkdownNode[]): string {
-  const lol = JSON.stringify(markdown)
+  const imports = { preact: '{ h, Fragment }' }
+
+  const parsed = parseTree(markdown, imports)
+  const lol = JSON.stringify({ markdown, imports, parsed })
   return `
-    import { h } from 'preact'
+    ${Object.entries(imports).map(([ from, i ]) => `import ${i} from '${from}'`).join('\n')}
 
     export default function () {
       console.log(${lol})
-      return h('div', null, 'in theory there should be a document here but budget was low')
+      return h(Fragment, null, ${toCode(parsed)})
     }
   `
 }

@@ -25,18 +25,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { h } from 'preact'
-import documents from '@sf/documents'
+/** @jsx h */
+import { h, Fragment } from 'preact'
+import Router, { RoutableProps } from 'preact-router'
+import documents, { DocumentModule, LazyDocumentModule } from '@sf/documents'
 import Sidebar from './Sidebar'
+import LazyRoute from './LazyRoute'
+
+function Route<B extends Boolean = Boolean> (props: { doc: DocumentModule<B>, lazy: B } & RoutableProps) {
+  if (props.lazy) {
+    return <LazyRoute component={props.doc as LazyDocumentModule}/>
+  }
+  return null
+}
 
 export default function Layout () {
-  console.log('layout', documents)
   return (
-    <div>
+    <Fragment>
       <Sidebar/>
       <main>
-        Contents!
+        <div className='container'>
+          <Router>
+            {documents.documents.map(doc => <Route key={doc.path} path={doc.path} doc={doc.doc} lazy={documents.lazy}/>)}
+          </Router>
+        </div>
       </main>
-    </div>
+    </Fragment>
   )
 }

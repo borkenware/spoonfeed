@@ -28,15 +28,12 @@
 import { h, ComponentType } from 'preact'
 import { useState, useEffect } from 'preact/hooks'
 
-interface LazyRouteProps<ChildProps> {
-  component: () => Promise<{ default: ComponentType<ChildProps> }>
-  fallback: ComponentType<null>
-}
+interface LazyRouteProps<ChildProps> { component: () => Promise<{ default: ComponentType<ChildProps> }> }
 
 export default function LazyRoute<ChildProps = {}> (props: LazyRouteProps<ChildProps> & ChildProps) {
   const [ component, setComponent ] = useState<ComponentType<ChildProps> | null>(null)
-  useEffect(() => void props.component().then(c => setComponent(c.default)))
+  useEffect(() => void props.component().then(c => setComponent(() => c.default)), [])
 
   if (component) return h(component, props)
-  return h(props.fallback, null)
+  return h('div', null, 'Loading...') // todo
 }

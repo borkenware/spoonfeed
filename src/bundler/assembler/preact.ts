@@ -26,11 +26,14 @@
  */
 
 import { join } from 'path'
-import { rollup, RollupOptions, OutputOptions } from 'rollup'
+import { rollup } from 'rollup'
 import resolve from '@rollup/plugin-node-resolve'
 import babel, { getBabelOutputPlugin } from '@rollup/plugin-babel'
+import commonjs from '@rollup/plugin-commonjs'
 import { terser } from 'rollup-plugin-terser'
 import virtual from './rollup/virtual'
+
+import { generateStylesheet } from './stylesheet'
 
 import { Config } from '../../config/types'
 import { RenderedCategory, RenderedDocument } from '..'
@@ -39,17 +42,18 @@ import { Asset } from '.'
 const { version } = require('../../../package.json')
 
 // todo: css
-function generateHtml (main: string, runtime?: string): string {
+function generateHtml (main: string, style: string, runtime?: string): string {
   return `
     <!DOCTYPE html>
     <html lang="en">
       <head>
         <meta charset="utf8"/>
+        <link rel="stylesheet" href="/${style}"/>
       </head>
       <body>
         <div id="react-root"><!-- #reactroot# --></div>
         ${runtime ? `<script>${runtime}</script>` : ''}
-        <script src="${main}"></script>
+        <script src="/${main}"></script>
         <!-- Generated with love by Spoonfeed v${version} -->
     </html>
   `.split('\n').map(s => s.slice(4).trimEnd()).filter(Boolean).join('\n')
@@ -64,6 +68,7 @@ async function generateAssets (categories: RenderedCategory[], documents: Render
       // todo: svg sprites (iconify)
       resolve({ extensions: [ '.js', '.ts', '.tsx' ] }),
       virtual(categories, documents, config.build.split),
+      commonjs(),
       babel({
         configFile: false,
         exclude: [ 'node_modules/**' ],
@@ -76,7 +81,7 @@ async function generateAssets (categories: RenderedCategory[], documents: Render
         plugins: [
           [ '@babel/transform-runtime', { useESModules: true } ],
           '@babel/proposal-class-properties',
-          '@babel/transform-react-display-name'
+          "add-react-displayname"
         ]
       })
     ]
@@ -93,7 +98,7 @@ async function generateAssets (categories: RenderedCategory[], documents: Render
 
   return output.map<Asset>(o => ({
     filename: `dist/${o.fileName}`,
-    src: o.type === 'chunk' ? o.code.replace(/^define\(/g, `d("./${o.fileName.slice(0, -3)}",`) : o.source
+    src: o.type === 'chunk' ? o.code.replace(/^define\(/g, `d("./${o.fileName}",`) : o.source
   }))
 }
 
@@ -123,12 +128,14 @@ async function generateRuntime (config: Config): Promise<string> {
 
 export default async function bundle (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
   const assets = await generateAssets(categories, documents, config);
+  const stylesheet = generateStylesheet(config)
+  assets.push(stylesheet)
 
   if (config.build.split) {
     const runtime = await generateRuntime(config)
-    assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename, runtime) })
+    assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename, stylesheet.filename, runtime) })
   } else {
-    assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename) })
+    assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename, stylesheet.filename) })
   }
 
   return assets

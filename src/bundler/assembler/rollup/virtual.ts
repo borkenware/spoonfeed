@@ -28,7 +28,8 @@
 import { RenderedCategory, RenderedDocument } from '../..'
 
 export default function (categories: RenderedCategory[], documents: RenderedDocument[], lazy: boolean) {
-  const knownSlugs = documents.map(d => d.slug)
+  const knownSlugs = documents.map(d => `${d.category ? `${d.category}/` : ''}${d.slug}`)
+  const uncategorized = documents.filter(d => !d.category).map(doc => ({ title: doc.title, slug: doc.slug, parts: doc.parts }))
 
   return {
     name: 'spoonfeed-virtual',
@@ -41,30 +42,31 @@ export default function (categories: RenderedCategory[], documents: RenderedDocu
     },
     load: (id: string) => {
       if (id === '@sf/categories') {
-        return `export default ${JSON.stringify(categories)}`
+        return `export default ${JSON.stringify({ categories, uncategorized })}`
       }
 
       if (id === '@sf/documents') {
         let imports = ''
-        let mdl = `export default { lazy: ${String(lazy)}, documents: {`
+        let mdl = `export default { lazy: ${String(lazy)}, documents: [`
         for (const doc of documents) {
-          const path = `@sf/doc/${doc.slug}.js`
-          if (lazy) {
-            mdl += `['${doc.slug}']: () => import('${path}'),`
-          } else {
-            const id = `_${Math.random().toString(36).slice(2)}`
-            imports += `import ${id} from '${path}'\n`
-            mdl += `['${doc.slug}']: ${id},`
-          }
+          const path = `${doc.category ? `${doc.category}/` : ''}${doc.slug}`
+          const mod = `@sf/doc/${path}.js`
+          const id = `_${Math.random().toString(36).slice(2)}`
+          imports += lazy ? `const ${id} = () => import('${mod}')\n` : `import ${id} from '${mod}'\n`
+          mdl += `{ path: '${path}', doc: ${id} },`
         }
-        mdl += '} }'
+        mdl += '] }'
         return imports + mdl
       }
 
       if (id.startsWith('@sf/doc/')) {
-        const slug = id.slice(8, -3)
-        const doc = documents.find(d => d.slug === slug)!!
-        return doc.code
+        const doc = id.slice(8, -3)
+        if (doc.includes('/')) {
+          const [ cat, slug ] = doc.split('/')
+          return documents.find(d => d.category === cat && d.slug === slug)!!.code
+        }
+
+        return documents.find(d => d.slug === doc)!!.code
       }
 
       return null

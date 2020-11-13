@@ -25,41 +25,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const cache: Record<string, object> = {}
-function r (modules: string | string[], resolve?: Function): object | Promise<object> {
-  if (Array.isArray(modules)) {
-    Promise.all(
-      modules.map(mdl =>
-        new Promise(resolve => {
-          const script = document.createElement('script')
-          script.src = '/dist/' + mdl.slice(2);
-          script.onload = () => resolve(cache[mdl])
-          document.head.appendChild(script);
-        })
-      )
-    ).then(m => resolve(...m))
-    return
-  }
+@use 'global';
+@use 'sidebar';
 
-  if (!cache[modules]) throw new Error('Module not found')
-  return cache[modules]
-}
+// todo: config
+:root {
+  --background-primary: #303030;
+  --background-secondary: #202020;
+  --background-tertiary: #151515;
 
-(window as any).d = function d (id: string, deps: string[], mdl: Function) {
-  if (!mdl) {
-    mdl = deps as unknown as Function
-    deps = []
-  }
-
-  const e = {}
-  const args = []
-  for (let i = 0; i < deps.length; i++) {
-    const dep = deps[i]
-    if (dep === 'require') args.push(r)
-    else if (dep === 'exports') args.push(e)
-    else args.push(r(dep))
-  }
-
-  mdl.apply(null, args)
-  cache[id] = e
+  --color-text: #c0c0c0;
+  --color-grey: #919191;
+  --color-link: #2ecfff;
+  --color-info: #1c8cff;
+  --color-warning: #ffd91c;
+  --color-danger: #e74c3c;
 }

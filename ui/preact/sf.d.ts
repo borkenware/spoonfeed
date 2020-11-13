@@ -26,13 +26,23 @@
  */
 
 declare module '@sf/categories' {
-  interface DocumentMeta {
+  export interface DocumentMeta {
     title: string
     slug: string
     parts: Array<{ id: string, name: string }>
   }
 
-  const categories: Array<{ title: string, slug: string, documents: DocumentMeta[] }>
+  export interface Category {
+    title: string
+    slug: string
+    documents: DocumentMeta[]
+  }
+
+  const categories: {
+    uncategorized: DocumentMeta[]
+    categories: Category[]
+  }
+
   export default categories;
 }
 
@@ -40,9 +50,15 @@ declare module '@sf/documents' {
   import { ComponentType } from 'preact'
 
   export type LazyDocumentModule = () => Promise<{ default: ComponentType }>
+  export type DocumentModule<B extends Boolean> = B extends true ? LazyDocumentModule : ComponentType
+
+  export interface Document<B extends Boolean> {
+    doc: DocumentModule<B>
+    path: string
+  }
 
   export interface Documents<B extends Boolean> {
-    documents: Record<string, B extends true ? LazyDocumentModule : ComponentType>
+    documents: Array<Document<B>>
     lazy: B
   }
 

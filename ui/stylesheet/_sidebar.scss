@@ -25,41 +25,59 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const cache: Record<string, object> = {}
-function r (modules: string | string[], resolve?: Function): object | Promise<object> {
-  if (Array.isArray(modules)) {
-    Promise.all(
-      modules.map(mdl =>
-        new Promise(resolve => {
-          const script = document.createElement('script')
-          script.src = '/dist/' + mdl.slice(2);
-          script.onload = () => resolve(cache[mdl])
-          document.head.appendChild(script);
-        })
-      )
-    ).then(m => resolve(...m))
-    return
+.sidebar {
+  width: 375px;
+  padding: 32px;
+  background-color: var(--background-secondary);
+  scrollbar-color: var(--background-secondary) var(--background-tertiary);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+
+  &-logo {
+    height: 40px;
+    font-size: 36px;
+    margin-bottom: 48px;
   }
 
-  if (!cache[modules]) throw new Error('Module not found')
-  return cache[modules]
-}
-
-(window as any).d = function d (id: string, deps: string[], mdl: Function) {
-  if (!mdl) {
-    mdl = deps as unknown as Function
-    deps = []
+  &-category {
+    text-transform: uppercase;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 0 10px;
   }
 
-  const e = {}
-  const args = []
-  for (let i = 0; i < deps.length; i++) {
-    const dep = deps[i]
-    if (dep === 'require') args.push(r)
-    else if (dep === 'exports') args.push(e)
-    else args.push(r(dep))
+  &-item {
+    color: inherit;
+    padding: 5px 10px;
+    margin-bottom: 2px;
+    text-decoration: none;
+    border-radius: 3px;
+    width: 100%;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, .01);
+    }
+
+    &:active {
+      background-color: rgba(255, 255, 255, .02);
+    }
+
+    &.active {
+      background-color: rgba(255, 255, 255, .1);
+    }
   }
 
-  mdl.apply(null, args)
-  cache[id] = e
+  &::-webkit-scrollbar {
+    background-color: transparent;
+    width: 8px
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--background-tertiary);
+    border: 2px solid var(--background-secondary);
+  }
 }

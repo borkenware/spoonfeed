@@ -37,7 +37,7 @@ import { parseBlocks } from './util'
 import { parseInlineMarkup } from './inline'
 
 function findTables (markdown: string) {
-  const matches = markdown.matchAll(/^(?:\|[^|\n]+)+\|\n(?:\|(?::-{2,}:|-{2,}))+\|\n(?:(?:\|[^|\n]+)+\|(?:\n|$))+/img)
+  const matches = markdown.matchAll(/^(?:\|[^|\n]+)+\|\n(?:\|(?::-{2,}:| ?-{2,} ?))+\|\n(?:(?:\|[^|\n]+)+\|(?:\n|$))+/img)
   const filtered = []
   for (const match of matches) {
     const pipes = match[0].split('\n').filter(Boolean).map(l => l.match(/(?<!\\)\|/g)!!.length)
@@ -50,7 +50,7 @@ const BlockRuleSet = [
   { regexp: /<!--(?:.|\n)*?-->/img, type: MarkdownType.Comment },
   { regexp: /^#{1,6} [^\n]+/img, type: MarkdownType.Heading },
   { regexp: /^[^\n]+\n[=-]{2,}/img, type: MarkdownType.Heading },
-  { regexp: /^(?:>(?:info|warn|danger))\n(?:(?<!\\)> [^\n]*(?:\n|$))+/img, type: MarkdownType.Note },
+  { regexp: /^(?:> ?(?:info|warn|danger))\n(?:(?<!\\)> [^\n]*(?:\n|$))+/img, type: MarkdownType.Note },
   { regexp: /^(?:> [^\n]*(?:\n|$))+/img, type: MarkdownType.Quote },
   { regexp: /^```[^\n]*\n(?:.|\n)+?\n```/img, type: MarkdownType.CodeBlock },
   { regexp: /(?:^ *(?<!\\)(?:[-+*]|\d\.) [^\n]+(?:\n|$))+/img, type: MarkdownType.List, noTrim: true },

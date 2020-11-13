@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import 'preact/debug'
+import 'preact/debug' // todo: config
 import { h, render } from 'preact'
 import Layout from './Layout'
 
