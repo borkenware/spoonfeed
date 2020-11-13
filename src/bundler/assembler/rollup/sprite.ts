@@ -25,16 +25,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BuildMode } from '../../config/types'
-import { MarkdownNode } from '../../markdown/types'
+export default {
 
-import preact from './preact'
-
-export function markdownToCode (documents: MarkdownNode[], mode: BuildMode): string {
-  if (mode === 'preact') {
-    return preact(documents)
-  }
-
-  // todo: html, html+turbolinks
-  throw new Error('Invalid mode?')
 }

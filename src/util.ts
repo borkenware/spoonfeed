@@ -25,6 +25,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import { join }  from 'path'
+import { existsSync }  from 'fs'
+import { readdir, lstat, unlink, rmdir }  from 'fs/promises'
+
 export type ExtendedType = 'string' | 'number' | 'bigint' |
   'boolean' | 'symbol' | 'undefined' | 'object' | 'function' |
   'array' | 'null' | 'nan'
@@ -56,9 +60,26 @@ export function formatDelta (from: bigint, to: bigint) {
 }
 
 export function sluggify (string: string) {
-  return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '').replace(/_/g, '-')
+  return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '').replace(/_/g, '-').toLowerCase()
 }
 
 export function slugToTitle (slug: string) {
   return slug.split('-').map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join(' ')
+}
+
+export async function rmdirRf (path: string) {
+  if (existsSync(path)) {
+    const files = await readdir(path);
+    for (const file of files) {
+      const curPath = join(path, file);
+      const stat = await lstat(curPath);
+
+      if (stat.isDirectory()) {
+        await rmdirRf(curPath);
+      } else {
+        await unlink(curPath);
+      }
+    }
+    await rmdir(path);
+  }
 }

@@ -25,17 +25,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { h } from 'preact'
+declare module '@rollup/plugin-sucrase' {
+  function sucrase (args: any): any
+  export = sucrase
+}
 
-import Sidebar from './Sidebar'
-
-export default function Layout () {
-  return (
-    <div>
-      <Sidebar/>
-      <main>
-        Contents!
-      </main>
-    </div>
-  )
+declare module '@rollup/plugin-node-resolve' {
+  function resolve (args: any): any
+  export = resolve
 }

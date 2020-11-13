@@ -93,7 +93,6 @@ const schema: Schema = {
     schema: {
       target: { types: 'string' },
       mode: { values: [ 'preact' ] },
-      sourcemaps: { types: 'boolean' },
       optimizeImg: { types: 'boolean' },
       offline: { types: 'boolean' },
       mangle: { types: 'boolean' },

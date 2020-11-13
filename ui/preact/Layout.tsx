@@ -25,16 +25,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BuildMode } from '../../config/types'
-import { MarkdownNode } from '../../markdown/types'
+import { h } from 'preact'
+import documents from '@sf/documents'
+import Sidebar from './Sidebar'
 
-import preact from './preact'
-
-export function markdownToCode (documents: MarkdownNode[], mode: BuildMode): string {
-  if (mode === 'preact') {
-    return preact(documents)
-  }
-
-  // todo: html, html+turbolinks
-  throw new Error('Invalid mode?')
+export default function Layout () {
+  console.log('layout', documents)
+  return (
+    <div>
+      <Sidebar/>
+      <main>
+        Contents!
+      </main>
+    </div>
+  )
 }

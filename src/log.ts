@@ -57,4 +57,7 @@ export function warn (message: string) {
 
 export function error (message: string, error?: Error) {
   console.log(`${Prefixes.ERROR}  ${message}`)
+  if (error) {
+    console.log(error) // todo: better
+  }
 }

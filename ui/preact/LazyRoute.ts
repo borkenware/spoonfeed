@@ -25,12 +25,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { h } from 'preact'
+import { h, ComponentType } from 'preact'
+import { useState, useEffect } from 'preact/hooks'
 
-export default function Sidebar () {
-  return (
-    <div>
-      Sidebar!
-    </div>
-  )
+interface LazyRouteProps<ChildProps> {
+  component: () => Promise<{ default: ComponentType<ChildProps> }>
+  fallback: ComponentType<null>
+}
+
+export default function LazyRoute<ChildProps = {}> (props: LazyRouteProps<ChildProps> & ChildProps) {
+  const [ component, setComponent ] = useState<ComponentType<ChildProps> | null>(null)
+  useEffect(() => void props.component().then(c => setComponent(c.default)))
+
+  if (component) return h(component, props)
+  return h(props.fallback, null)
 }

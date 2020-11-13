@@ -25,14 +25,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BuildMode } from '../../config/types'
-import { MarkdownNode } from '../../markdown/types'
+import { RenderedCategory, RenderedDocument } from '..'
+import { Config } from '../../config/types'
 
 import preact from './preact'
 
-export function markdownToCode (documents: MarkdownNode[], mode: BuildMode): string {
-  if (mode === 'preact') {
-    return preact(documents)
+export interface Asset {
+  filename: string
+  src: string | Uint8Array
+}
+
+export function assemble (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
+  if (config.build.mode === 'preact') {
+    return preact(categories, documents, config)
   }
 
   // todo: html, html+turbolinks

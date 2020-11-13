@@ -25,16 +25,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BuildMode } from '../../config/types'
-import { MarkdownNode } from '../../markdown/types'
+import 'preact/debug'
+import { h, render } from 'preact'
+import Layout from './Layout'
 
-import preact from './preact'
-
-export function markdownToCode (documents: MarkdownNode[], mode: BuildMode): string {
-  if (mode === 'preact') {
-    return preact(documents)
-  }
-
-  // todo: html, html+turbolinks
-  throw new Error('Invalid mode?')
-}
+const App = h(Layout, null)
+render(App, document.getElementById('react-root')!!)

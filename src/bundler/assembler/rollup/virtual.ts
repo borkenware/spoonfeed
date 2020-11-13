@@ -25,16 +25,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BuildMode } from '../../config/types'
-import { MarkdownNode } from '../../markdown/types'
+import { RenderedCategory, RenderedDocument } from '../..'
 
-import preact from './preact'
+export default function (categories: RenderedCategory[], documents: RenderedDocument[], lazy: boolean) {
+  const knownSlugs = documents.map(d => d.slug)
 
-export function markdownToCode (documents: MarkdownNode[], mode: BuildMode): string {
-  if (mode === 'preact') {
-    return preact(documents)
+  return {
+    name: 'spoonfeed-virtual',
+    resolveId (src: string) {
+      const known = [ '@sf/categories', '@sf/documents' ].includes(src) ||
+        (src.startsWith('@sf/doc/') && knownSlugs.includes(src.slice(8, -3)))
+
+      if (known) return src
+      return null
+    },
+    load: (id: string) => {
+      if (id === '@sf/categories') {
+        return `export default ${JSON.stringify(categories)}`
+      }
+
+      if (id === '@sf/documents') {
+        let imports = ''
+        let mdl = `export default { lazy: ${String(lazy)}, documents: {`
+        for (const doc of documents) {
+          const path = `@sf/doc/${doc.slug}.js`
+          if (lazy) {
+            mdl += `['${doc.slug}']: () => import('${path}'),`
+          } else {
+            const id = `_${Math.random().toString(36).slice(2)}`
+            imports += `import ${id} from '${path}'\n`
+            mdl += `['${doc.slug}']: ${id},`
+          }
+        }
+        mdl += '} }'
+        return imports + mdl
+      }
+
+      if (id.startsWith('@sf/doc/')) {
+        const slug = id.slice(8, -3)
+        const doc = documents.find(d => d.slug === slug)!!
+        return doc.code
+      }
+
+      return null
+    }
   }
-
-  // todo: html, html+turbolinks
-  throw new Error('Invalid mode?')
 }

@@ -26,16 +26,17 @@
  */
 
 import { existsSync } from 'fs'
-import { readFile } from 'fs/promises'
-import { join, basename } from 'path'
+import { readFile, mkdir, writeFile } from 'fs/promises'
+import { join, basename, dirname } from 'path'
 
 import * as log from '../log'
 import readConfig from '../config'
 import parseMarkdown from '../markdown/parser'
 import fsToRegistry, { validateRegistry } from '../filesystem'
-import { formatDelta, sluggify, slugToTitle } from '../util'
+import { formatDelta, sluggify, slugToTitle, rmdirRf } from '../util'
 import { flattenToText } from '../markdown/util'
-import codegen from './codegen'
+import { markdownToCode } from './codegen'
+import { assemble } from './assembler'
 import BundlerError from './error'
 
 import { MarkdownType } from '../markdown/types'
@@ -45,13 +46,20 @@ export interface RenderedDocument {
   title: string
   slug: string
   category?: string
-  parts: string[]
+  parts: Array<{ id: string, name: string }>
   code: string
+}
+
+export interface DocumentMeta {
+  title: string
+  slug: string
+  parts: Array<{ id: string, name: string }>
 }
 
 export interface RenderedCategory {
   title: string
   slug: string
+  documents: DocumentMeta[]
 }
 
 function resolveRegistry (config: Config): Promise<DocumentRegistry> {
@@ -85,14 +93,14 @@ async function parseFile (file: string, mode: BuildMode): Promise<RenderedDocume
   const title = header ? flattenToText(header) : null
 
   if (!header || !title || !title.trim()) {
-    throw new Error(`Invalid document! Document at ${file} did not contain a Heading 1, or no text could be extracted from it.`)
+    throw new BundlerError(`Invalid document! Document ${basename(file)} did not contain a Heading 1, or no text could be extracted from it.`)
   }
 
   return {
     title,
-    parts,
+    parts: parts.map(s => ({ id: sluggify(s), name: s })),
     slug: sluggify(basename(file)),
-    code: codegen(parsed.tree, mode)
+    code: markdownToCode(parsed.tree, mode)
   }
 }
 
@@ -112,17 +120,34 @@ async function doBundle () {
     }
 
     // todo: category manifest
-    const slug = sluggify(item.category)
-    categories.push({ title: slugToTitle(slug), slug })
+    const categorySlug = sluggify(item.category)
+    const docs: DocumentMeta[] = []
     for (const d of item.documents) {
       const doc = await parseFile(d, config.build.mode)
-      doc.category = slug
+      doc.category = categorySlug
       documents.push(doc)
+      docs.push({ title: doc.title, slug: doc.slug, parts: doc.parts })
     }
+
+    categories.push({
+      title: slugToTitle(categorySlug),
+      slug: categorySlug,
+      documents: docs
+    })
   }
 
   log.debug('Assemble app')
-  // todo
+  const assets = await assemble(categories, documents, config)
+  await rmdirRf(config.build.target)
+  await mkdir(config.build.target, { recursive: true })
+  await Promise.all(
+    assets.map(async function (asset) {
+      const path = join(config.build.target, asset.filename)
+      const dir = dirname(path)
+      if (!existsSync(dir)) await mkdir(dir, { recursive: true })
+      await writeFile(path, asset.src)
+    })
+  )
 
   if (config.ssr.generate) {
     log.debug('Generate server')

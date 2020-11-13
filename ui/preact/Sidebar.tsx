@@ -25,8 +25,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { rollup } from 'rollup'
+import { h } from 'preact'
+import categories from '@sf/categories'
 
-export default function bundle () {
-  
+export default function Sidebar () {
+  console.log('sidebar', categories)
+  return (
+    <div>
+      Sidebar!
+    </div>
+  )
 }

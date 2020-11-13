@@ -52,7 +52,6 @@ const defConfig: Config = {
   build: {
     target: 'build',
     mode: 'preact',
-    sourcemaps: true,
     optimizeImg: true,
     offline: true,
     mangle: true,

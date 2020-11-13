@@ -64,7 +64,6 @@ export type BuildMode = 'preact'
 export interface ConfigBuild {
   target: string
   mode: BuildMode
-  sourcemaps: boolean
   optimizeImg: boolean
   offline: boolean
   mangle: boolean

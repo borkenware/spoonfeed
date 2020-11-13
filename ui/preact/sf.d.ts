@@ -25,16 +25,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { BuildMode } from '../../config/types'
-import { MarkdownNode } from '../../markdown/types'
-
-import preact from './preact'
-
-export function markdownToCode (documents: MarkdownNode[], mode: BuildMode): string {
-  if (mode === 'preact') {
-    return preact(documents)
+declare module '@sf/categories' {
+  interface DocumentMeta {
+    title: string
+    slug: string
+    parts: Array<{ id: string, name: string }>
   }
 
-  // todo: html, html+turbolinks
-  throw new Error('Invalid mode?')
+  const categories: Array<{ title: string, slug: string, documents: DocumentMeta[] }>
+  export default categories;
+}
+
+declare module '@sf/documents' {
+  import { ComponentType } from 'preact'
+
+  export type LazyDocumentModule = () => Promise<{ default: ComponentType }>
+
+  export interface Documents<B extends Boolean> {
+    documents: Record<string, B extends true ? LazyDocumentModule : ComponentType>
+    lazy: B
+  }
+
+  const documents: Documents<Boolean>
+  export default documents
 }

@@ -98,10 +98,11 @@ Whether Spoonfeed should generate the necessary service worker and manifest to m
 even if they go offline (provided they visited the docs at least once prior) or not.
 
 - `build.mangle` - boolean (default: `true`)<br>
-Whether exports should be mangled or not.
+Whether exports should be mangled or not. Only applicable for `preact` builds.
 
 - `build.split` - boolean (default: `true`)<br>
-Whether Spoonfeed should make use of code splitting or not. Reduces the initial bundle size.
+Whether Spoonfeed should make use of code splitting or not. Reduces the initial bundle size. Only applicable for
+`preact` builds.
 
 ## Pre-rendering server-side options
 **Note**: Those will only be used if you set your app to compile to a Preact app.
