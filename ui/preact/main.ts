@@ -30,4 +30,4 @@ import { h, render } from 'preact'
 import Layout from './Layout'
 
 const App = h(Layout, null)
-render(App, document.getElementById('react-root')!!)
+render(App, document.getElementById('react-root'))

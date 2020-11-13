@@ -18,7 +18,7 @@ function r (modules: string | string[], resolve?: Function): object | Promise<ob
   return cache[modules]
 }
 
-(window as any).d = async function d (id: string, deps: string[], mdl: Function) {
+(window as any).d = function d (id: string, deps: string[], mdl: Function) {
   if (!mdl) {
     mdl = deps as unknown as Function
     deps = []
@@ -26,7 +26,8 @@ function r (modules: string | string[], resolve?: Function): object | Promise<ob
 
   const e = {}
   const args = []
-  for (const dep of deps) {
+  for (let i = 0; i < deps.length; i++) {
+    const dep = deps[i]
     if (dep === 'require') args.push(r)
     else if (dep === 'exports') args.push(e)
     else r(dep)

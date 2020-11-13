@@ -28,7 +28,7 @@
 import { join } from 'path'
 import { rollup, RollupOptions, OutputOptions } from 'rollup'
 import resolve from '@rollup/plugin-node-resolve'
-import sucrase from '@rollup/plugin-sucrase'
+import babel, { getBabelOutputPlugin } from '@rollup/plugin-babel'
 import { terser } from 'rollup-plugin-terser'
 import virtual from './rollup/virtual'
 
@@ -49,48 +49,86 @@ function generateHtml (main: string, runtime?: string): string {
       <body>
         <div id="react-root"><!-- #reactroot# --></div>
         ${runtime ? `<script>${runtime}</script>` : ''}
-        <script src="/dist/${main}"></script>
+        <script src="${main}"></script>
         <!-- Generated with love by Spoonfeed v${version} -->
     </html>
   `.split('\n').map(s => s.slice(4).trimEnd()).filter(Boolean).join('\n')
 }
 
-export default async function bundle (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
-  const entryMain = join(__dirname, '../../..', 'ui/preact/main.ts')
-  const entryRjs = join(__dirname, '../../..', 'ui/preact/runtime.ts')
-  const rollupOpts: RollupOptions = {
+async function generateAssets (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
+  const bundle = await rollup({
+    input: join(__dirname, '../../..', 'ui/preact/main.ts'),
     preserveEntrySignatures: false,
     plugins: [
       // todo: img
       // todo: svg sprites (iconify)
       resolve({ extensions: [ '.js', '.ts', '.tsx' ] }),
-      sucrase({ exclude: [ 'node_modules/**' ], jsxPragma: 'h', transforms: [ 'typescript', 'jsx' ] }),
-      virtual(categories, documents, config.build.split)
+      virtual(categories, documents, config.build.split),
+      babel({
+        configFile: false,
+        exclude: [ 'node_modules/**' ],
+        babelHelpers: 'runtime',
+        extensions: [ '.js', '.ts', '.tsx' ],
+        presets: [
+          [ '@babel/preset-react', { pragma: 'h', pragmaFrag: 'Fragment' } ],
+          [ '@babel/preset-typescript', { isTSX: true, allExtensions: true, jsxPragma: 'h' } ]
+        ],
+        plugins: [
+          [ '@babel/transform-runtime', { useESModules: true } ],
+          '@babel/proposal-class-properties',
+          '@babel/transform-react-display-name'
+        ]
+      })
     ]
-  }
+  })
 
-  const outOpts: OutputOptions = {
+  const { output } = await bundle.generate({
     entryFileNames: '[hash].js',
     chunkFileNames: '[hash].chk.js',
-    sourcemap: false,
-    plugins: [ terser({ mangle: config.build.mangle }) ],
-    amd: { id: '[__amd_id__]', define: 'd' }
-  }
+    plugins: [
+      getBabelOutputPlugin({ presets: [ [ '@babel/env', { modules: 'amd' } ] ] }),
+      terser({ mangle: config.build.mangle })
+    ]
+  })
 
-  const bundle = await rollup({ input: entryMain, ...rollupOpts })
-  const { output } = await bundle.generate({ format: 'amd', ...outOpts })
-
-  const assets = output.map<Asset>(o => ({
+  return output.map<Asset>(o => ({
     filename: `dist/${o.fileName}`,
-    src: o.type === 'chunk' ? o.code.replace(/\[__amd_id__]/g, `./${o.fileName.slice(0, -3)}`) : o.source
+    src: o.type === 'chunk' ? o.code.replace(/^define\(/g, `d("./${o.fileName.slice(0, -3)}",`) : o.source
   }))
+}
+
+async function generateRuntime (config: Config): Promise<string> {
+  const bundle = await rollup({
+    input: join(__dirname, '../../..', 'ui/preact/runtime.ts'),
+    plugins: [
+      babel({
+        configFile: false,
+        babelHelpers: 'inline',
+        extensions: [ '.js', '.ts' ],
+        presets: [ '@babel/preset-typescript' ],
+        plugins: [ '@babel/proposal-class-properties' ]
+      })
+    ]
+  })
+
+  const { output: [ { code } ] } = await bundle.generate({
+    plugins: [
+      getBabelOutputPlugin({allowAllFormats: true, presets: [ [ '@babel/env', { modules: 'cjs' } ] ] }),
+      terser({ mangle: config.build.mangle })
+    ]
+  })
+
+  return `!function(){${code.trim()}}()`
+}
+
+export default async function bundle (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
+  const assets = await generateAssets(categories, documents, config);
 
   if (config.build.split) {
-    const runtimeBundle = await rollup({ input: entryRjs, ...rollupOpts })
-    const { output: [ { code: runtime } ] } = await runtimeBundle.generate({ format: 'iife', ...outOpts })
-    assets.push({ filename: 'index.html', src: generateHtml(output[0].fileName, runtime.trim()) })
+    const runtime = await generateRuntime(config)
+    assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename, runtime) })
   } else {
-    assets.push({ filename: 'index.html', src: generateHtml(output[0].fileName) })
+    assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename) })
   }
 
   return assets
