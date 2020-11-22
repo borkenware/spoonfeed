@@ -25,7 +25,43 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-declare module '@rollup/plugin-node-resolve' {
-  function resolve (args: any): any
-  export = resolve
+declare module '@sf/categories' {
+  export interface DocumentMeta {
+    title: string
+    slug: string
+    parts: Array<{ id: string, name: string }>
+  }
+
+  export interface Category {
+    title: string
+    slug: string
+    documents: DocumentMeta[]
+  }
+
+  let categories: {
+    uncategorized: DocumentMeta[]
+    categories: Category[]
+  }
+
+  export default categories
+}
+
+declare module '@sf/documents' {
+  import type { ComponentType } from 'preact'
+
+  export type LazyDocumentModule = () => Promise<{ default: ComponentType }>
+  export type DocumentModule<TBool extends boolean> = TBool extends true ? LazyDocumentModule : ComponentType
+
+  export interface Document<TBool extends boolean> {
+    doc: DocumentModule<TBool>
+    path: string
+  }
+
+  export interface Documents<TBool extends boolean> {
+    documents: Array<Document<TBool>>
+    lazy: TBool
+  }
+
+  let documents: Documents<boolean>
+  export default documents
 }

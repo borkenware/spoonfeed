@@ -46,7 +46,7 @@ export interface RegistryCategory {
 export type RawDocumentRegistry = Array<RegistryCategory | string>
 
 export type DocumentRegistry = {
-  documentCount: number,
+  documentCount: number
   documents: RawDocumentRegistry
 }
 
@@ -90,9 +90,9 @@ export interface ConfigSsrH2 {
   }
 }
 
-export interface Config {
-  workdir: string,
-  documents: ConfigDocumentsFs | ConfigDocumentsRegistry,
+export interface Config extends Record<string, unknown> {
+  workdir: string
+  documents: ConfigDocumentsFs | ConfigDocumentsRegistry
   ui: ConfigUi
   build: ConfigBuild
   ssr: ConfigSsr | ConfigSsrH2

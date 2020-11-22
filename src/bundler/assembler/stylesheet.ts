@@ -36,9 +36,9 @@ export function generateStylesheet (config: Config): Asset {
   // todo: config (palettes/colors, additional css)
   // todo: post-process (postcss + autoprefixer, minimizer)
 
-  const file = join(__dirname, '../../..', 'ui/stylesheet/main.scss')
-  const stylesheet = sass.renderSync({ file })
-  const css = stylesheet.css.toString('utf8').trim()
+  let file = join(__dirname, '../../..', 'ui/stylesheet/main.scss')
+  let stylesheet = sass.renderSync({ file })
+  let css = stylesheet.css.toString('utf8').trim()
   return {
     filename: `dist/${createHash('sha1').update(css).digest('hex').slice(0, 8)}.css`,
     src: css

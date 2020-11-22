@@ -31,15 +31,16 @@ import resolve from '@rollup/plugin-node-resolve'
 import babel, { getBabelOutputPlugin } from '@rollup/plugin-babel'
 import commonjs from '@rollup/plugin-commonjs'
 import { terser } from 'rollup-plugin-terser'
+
+import type { Config } from '../../config/types'
+import type { RenderedCategory, RenderedDocument } from '..'
+
 import virtual from './rollup/virtual'
-
 import { generateStylesheet } from './stylesheet'
+import type { Asset } from '.'
 
-import { Config } from '../../config/types'
-import { RenderedCategory, RenderedDocument } from '..'
-import { Asset } from '.'
-
-const { version } = require('../../../package.json')
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- We use require here so it doesn't get bundled by TS
+let { version } = require('../../../package.json') as { version: string }
 
 // todo: css
 function generateHtml (main: string, style: string, runtime?: string): string {
@@ -56,11 +57,14 @@ function generateHtml (main: string, style: string, runtime?: string): string {
         <script src="/${main}"></script>
         <!-- Generated with love by Spoonfeed v${version} -->
     </html>
-  `.split('\n').map(s => s.slice(4).trimEnd()).filter(Boolean).join('\n')
+  `.split('\n')
+    .map((s) => s.slice(4).trimEnd())
+    .filter(Boolean)
+    .join('\n')
 }
 
 async function generateAssets (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
-  const bundle = await rollup({
+  let bundle = await rollup({
     input: join(__dirname, '../../..', 'ui/preact/main.ts'),
     preserveEntrySignatures: false,
     plugins: [
@@ -87,7 +91,7 @@ async function generateAssets (categories: RenderedCategory[], documents: Render
     ]
   })
 
-  const { output } = await bundle.generate({
+  let { output } = await bundle.generate({
     entryFileNames: '[hash].js',
     chunkFileNames: '[hash].chk.js',
     plugins: [
@@ -103,7 +107,7 @@ async function generateAssets (categories: RenderedCategory[], documents: Render
 }
 
 async function generateRuntime (config: Config): Promise<string> {
-  const bundle = await rollup({
+  let bundle = await rollup({
     input: join(__dirname, '../../..', 'ui/preact/runtime.ts'),
     plugins: [
       babel({
@@ -111,28 +115,28 @@ async function generateRuntime (config: Config): Promise<string> {
         babelHelpers: 'inline',
         extensions: [ '.js', '.ts' ],
         presets: [ '@babel/preset-typescript' ],
-        plugins: [ '@babel/proposal-class-properties' ]
-      })
-    ]
+        plugins: [ '@babel/proposal-class-properties' ],
+      }),
+    ],
   })
 
-  const { output: [ { code } ] } = await bundle.generate({
+  let { output: [ { code } ] } = await bundle.generate({
     plugins: [
-      getBabelOutputPlugin({allowAllFormats: true, presets: [ [ '@babel/env', { modules: 'cjs' } ] ] }),
-      terser({ mangle: config.build.mangle })
-    ]
+      getBabelOutputPlugin({ allowAllFormats: true, presets: [ [ '@babel/env', { modules: 'cjs' } ] ] }),
+      terser({ mangle: config.build.mangle }),
+    ],
   })
 
   return `!function(){${code.trim()}}()`
 }
 
 export default async function bundle (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
-  const assets = await generateAssets(categories, documents, config);
-  const stylesheet = generateStylesheet(config)
+  let assets = await generateAssets(categories, documents, config);
+  let stylesheet = generateStylesheet(config)
   assets.push(stylesheet)
 
   if (config.build.split) {
-    const runtime = await generateRuntime(config)
+    let runtime = await generateRuntime(config)
     assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename, stylesheet.filename, runtime) })
   } else {
     assets.push({ filename: 'index.html', src: generateHtml(assets[0].filename, stylesheet.filename) })

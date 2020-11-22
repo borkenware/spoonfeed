@@ -26,42 +26,55 @@
  */
 
 import { hasOwnProperty } from '../util'
-import { MarkdownNode, MarkdownType, RawMarkdownNode } from './types'
 
-export interface ParserBlockRule {
-  regexp: RegExp | ((markdown: string) => Record<string | number, any>[])
+import { MarkdownType } from '@t/markdown'
+import type { MarkdownNode, ParserBlockRule, ParserInlineRule, ParsedNode } from '@t/markdown'
+
+interface InlineParseMatch {
+  start: number
+  end: number
+  string: string
   type: MarkdownType
-  noTrim?: boolean
+  recurse: boolean
 }
 
-export interface ParserInlineRule {
-  regexp: RegExp
-  type: MarkdownType
-  noTrim?: boolean
-  recurse?: boolean
-  extract?: number
+function findTextNodes (nodes: Array<MarkdownNode | string>): string[] {
+  let found = []
+
+  for (let node of nodes) {
+    if (typeof node === 'string') found.push(node)
+    if (hasOwnProperty(node, 'content')) {
+      if (node.type === MarkdownType.TEXT && typeof node.content === 'string') found.push(node.content)
+      let items = Array.isArray(node.content) ? node.content : [ node.content ]
+      found.concat(findTextNodes(items))
+    }
+  }
+
+  return found
 }
 
-export function parseBlocks (ruleset: ParserBlockRule[], markdown: string): RawMarkdownNode[] {
-  const buffer: any[] = [ markdown ]
+export function parseBlocks (ruleset: ParserBlockRule[], markdown: string): ParsedNode[] {
+  let buffer: Array<string | ParsedNode> = [ markdown ]
 
-  for (const rule of ruleset) {
+  for (let rule of ruleset) {
     for (let i = 0; i < buffer.length; i++) {
-      if (typeof buffer[i] !== 'string') continue
+      let item = buffer[i]
+      if (typeof item !== 'string') continue
 
       let delta = 0
-      const matches = typeof rule.regexp === 'function' ? rule.regexp(buffer[i]) : buffer[i].matchAll(rule.regexp)
-      for (const match of matches) {
-        const index = match.index - delta
+      let matches = typeof rule.regexp === 'function' ? rule.regexp(item) : item.matchAll(rule.regexp)
+      for (let match of matches) {
+        if (!match.index) continue
+        let index = match.index - delta
 
-        const before = buffer[i].slice(0, index)
-        const after = buffer[i].slice(index + match[0].length)
-        const block = {
-          type: rule.type,
-          content: rule.noTrim ? match[0] : match[0].trim()
+        let before = item.slice(0, index)
+        let after = item.slice(index + match[0].length)
+        let block = {
+          node: rule.type,
+          markup: rule.noTrim ? match[0] : match[0].trim(),
         }
 
-        const newItems = [ before, block, after ].filter(Boolean)
+        let newItems = [ before, block, after ].filter(Boolean)
         buffer.splice(i, 1, ...newItems)
 
         delta += index + match[0].length
@@ -70,72 +83,61 @@ export function parseBlocks (ruleset: ParserBlockRule[], markdown: string): RawM
     }
   }
 
-  return buffer.filter(e => typeof e !== 'string') as RawMarkdownNode[]
+  return buffer.filter((e) => typeof e !== 'string') as ParsedNode[]
 }
 
-export function parseInline (ruleset: ParserInlineRule[], markdown: string): RawMarkdownNode[] {
-  const found: any[] = []
+export function parseInline (ruleset: ParserInlineRule[], markdown: string): ParsedNode[] {
+  let found: InlineParseMatch[] = []
 
-  for (const rule of ruleset) {
-    for (const match of markdown.matchAll(rule.regexp)) {
+  for (let rule of ruleset) {
+    for (let match of markdown.matchAll(rule.regexp)) {
+      if (!match.index) continue
       found.push({
         start: match.index,
-        end: match.index!! + match[0].length,
-        string: match[rule.extract || 0],
+        end: match.index + match[0].length,
+        string: match[rule.extract ?? 0],
         type: rule.type,
-        recurse: rule.recurse
+        recurse: Boolean(rule.recurse),
       })
     }
   }
 
-  const sorted = found.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : 0)
-  const res: RawMarkdownNode[] = []
+  let sorted = found.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : 0)
+  let res: ParsedNode[] = []
   let cursor = 0
-  for (const match of sorted) {
+  for (let match of sorted) {
     if (match.start < cursor) continue
     if (match.start - cursor > 0) {
       res.push({
-        type: MarkdownType.Text,
-        content: markdown.slice(cursor, match.start).replace(/\n/g, ' ')
+        node: MarkdownType.TEXT,
+        markup: markdown.slice(cursor, match.start).replace(/\n/g, ' '),
       })
     }
 
     res.push({
-      type: match.type,
-      content: match.recurse ? parseInline(ruleset, match.string) : match.string
+      node: match.type,
+      markup: match.recurse ? parseInline(ruleset, match.string) : match.string,
     })
     cursor = match.end
   }
 
   if (cursor < markdown.length) {
     res.push({
-      type: MarkdownType.Text,
-      content: markdown.slice(cursor).replace(/\n/g, ' ')
+      node: MarkdownType.TEXT,
+      markup: markdown.slice(cursor).replace(/\n/g, ' '),
     })
   }
 
   return res
 }
 
-function findTextNodes (nodes: (MarkdownNode | string)[]): string[] {
-  const found = []
-  for (const node of nodes) {
-    if (typeof node === 'string') found.push(node)
-    if (hasOwnProperty(node , 'content')) {
-      if (node.type === MarkdownType.Text && typeof node.content === 'string') found.push(node.content)
-      const items = Array.isArray(node.content) ? node.content : [ node.content ]
-      found.concat(findTextNodes(items))
-    }
+export function flattenToText (node: MarkdownNode): string | null {
+  if (node.type === MarkdownType.TEXT) return node.content
+  if (hasOwnProperty(node, 'content') && Array.isArray(node.content)) {
+    return findTextNodes(node.content)
+      .filter(Boolean)
+      .join(' ')
   }
 
-  return found
-}
-
-export function flattenToText (node: MarkdownNode | string): string | null {
-  if (typeof node === 'string') return node
-  if (!hasOwnProperty(node , 'content')) return null
-  if (node.type === MarkdownType.Text && typeof node.content === 'string') return node.content
-
-  const items = Array.isArray(node.content) ? node.content : [ node.content ]
-  return findTextNodes(items).join(' ')
+  return null
 }

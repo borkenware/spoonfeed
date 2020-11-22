@@ -25,9 +25,38 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import 'preact/debug' // todo: config
-import { h, render } from 'preact'
-import Layout from './Layout'
+import { h, Fragment } from 'preact'
+import Router from 'preact-router'
+import type { VNode } from 'preact'
+import type { RoutableProps } from 'preact-router'
 
-const App = h(Layout, null)
-render(App, document.getElementById('react-root'))
+/* eslint-disable import/no-unresolved -- Virtual modules handled by Rollup */
+import documents from '@sf/documents'
+import type { DocumentModule, LazyDocumentModule } from '@sf/documents'
+/* eslint-enable import/no-unresolved */
+
+import Sidebar from './Sidebar'
+import LazyRoute from './LazyRoute'
+
+function Route<TBool extends boolean> (props: { doc: DocumentModule<TBool>, lazy: TBool } & RoutableProps): VNode | null {
+  if (props.lazy) {
+    return <LazyRoute component={props.doc as LazyDocumentModule}/>
+  }
+
+  return null
+}
+
+export default function Layout (): VNode {
+  return (
+    <>
+      <Sidebar/>
+      <main>
+        <div className='container'>
+          <Router>
+            {documents.documents.map((doc) => <Route key={doc.path} path={doc.path} doc={doc.doc} lazy={documents.lazy}/>)}
+          </Router>
+        </div>
+      </main>
+    </>
+  )
+}

@@ -43,7 +43,7 @@ case MarkdownType.HttpMethod:
 case MarkdownType.HttpParam:
 */
 
-const BasicTags: Record<string, string> = {
+let BasicTags: Record<string, string> = {
   [MarkdownType.Paragraph]: 'p',
   [MarkdownType.Quote]: 'blockquote',
   [MarkdownType.Bold]: 'b',
@@ -56,8 +56,8 @@ const BasicTags: Record<string, string> = {
 }
 
 function toCode (nodes: Array<PreactNode | string>): string {
-  const components: string[] = []
-  for (const node of nodes) {
+  let components: string[] = []
+  for (let node of nodes) {
     if (typeof node === 'string') {
       components.push(`'${node.replace(/'/g, '\\\'')}'`)
       continue
@@ -74,12 +74,12 @@ function toCode (nodes: Array<PreactNode | string>): string {
 
 function parseBasicNode (node: MarkdownNode, imports: Imports): PreactNode | string {
   if (node.type === MarkdownType.Text) return node.content as string
-  const tag = node.type === MarkdownType.Heading ? `h${node.level}` : BasicTags[node.type]
+  let tag = node.type === MarkdownType.Heading ? `h${node.level}` : BasicTags[node.type]
   if (node.type === MarkdownType.Ruler || node.type === MarkdownType.LineBreak) {
     return { tag, component: false }
   }
 
-  const content = (node as any).content
+  let content = (node as any).content
   return { tag, component: false, children: typeof content === 'string' ? [ content ] : parseTree(content, imports) }
 }
 
@@ -89,8 +89,8 @@ function parseHeading (node: MarkdownHeadingNode, imports: Imports): PreactNode 
 }
 
 function parseTree (markdown: MarkdownNode[], imports: Imports): Array<PreactNode | string> {
-  const res: Array<PreactNode | string> = []
-  for (const node of markdown) {
+  let res: Array<PreactNode | string> = []
+  for (let node of markdown) {
     switch (node.type) {
       case MarkdownType.Paragraph:
       case MarkdownType.Quote:
@@ -140,10 +140,10 @@ function parseTree (markdown: MarkdownNode[], imports: Imports): Array<PreactNod
 }
 
 export default function render (markdown: MarkdownNode[]): string {
-  const imports = { preact: '{ h, Fragment }' }
+  let imports = { preact: '{ h, Fragment }' }
 
-  const parsed = parseTree(markdown, imports)
-  const lol = JSON.stringify({ markdown, imports, parsed })
+  let parsed = parseTree(markdown, imports)
+  let lol = JSON.stringify({ markdown, imports, parsed })
   return `
     ${Object.entries(imports).map(([ from, i ]) => `import ${i} from '${from}'`).join('\n')}
 

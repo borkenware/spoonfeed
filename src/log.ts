@@ -28,36 +28,45 @@
 let logDebug = false
 
 const Prefixes = {
-  DEBUG: `\x1b[47m\x1b[30m DEBUG \x1b[0m`,
-  INFO: `\x1b[44m\x1b[30m INFO \x1b[0m`,
-  SUCCESS: `\x1b[42m\x1b[30m SUCCESS \x1b[0m`,
-  WARNING: `\x1b[43m\x1b[30m WARN \x1b[0m`,
-  ERROR: `\x1b[41m\x1b[30m ERROR \x1b[0m`
+  DEBUG: '\x1b[47m\x1b[30m DEBUG \x1b[0m',
+  INFO: '\x1b[44m\x1b[30m INFO \x1b[0m',
+  SUCCESS: '\x1b[42m\x1b[30m SUCCESS \x1b[0m',
+  WARNING: '\x1b[43m\x1b[30m WARN \x1b[0m',
+  ERROR: '\x1b[41m\x1b[30m ERROR \x1b[0m',
 }
 
-export function setDebug (d: boolean) { logDebug = d }
+function setDebug (d: boolean): void { logDebug = d }
 
-export function debug (message: string) {
+function debug (message: string): void {
   if (logDebug) {
     console.log(`${Prefixes.DEBUG}  ${message}`)
   }
 }
 
-export function info (message: string) {
+function info (message: string): void {
   console.log(`${Prefixes.INFO}  ${message}`)
 }
 
-export function success (message: string) {
+function success (message: string): void {
   console.log(`${Prefixes.SUCCESS}  ${message}`)
 }
 
-export function warn (message: string) {
+function warn (message: string): void {
   console.log(`${Prefixes.WARNING}  ${message}`)
 }
 
-export function error (message: string, error?: Error) {
+function error (message: string, err?: Error): void {
   console.log(`${Prefixes.ERROR}  ${message}`)
-  if (error) {
+  if (err) {
     console.log(error) // todo: better
   }
+}
+
+export default {
+  setDebug: setDebug,
+  debug: debug,
+  info: info,
+  success: success,
+  warn: warn,
+  error: error,
 }

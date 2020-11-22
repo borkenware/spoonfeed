@@ -29,18 +29,19 @@ import { existsSync } from 'fs'
 import { readFile, mkdir, writeFile } from 'fs/promises'
 import { join, basename, dirname } from 'path'
 
-import * as log from '../log'
+import log from '../log'
 import readConfig from '../config'
 import parseMarkdown from '../markdown/parser'
 import fsToRegistry, { validateRegistry } from '../filesystem'
 import { formatDelta, sluggify, slugToTitle, rmdirRf } from '../util'
 import { flattenToText } from '../markdown/util'
+import { MarkdownType } from '../markdown/types'
+import type { BuildMode, Config, DocumentRegistry } from '../config/types'
+
 import { markdownToCode } from './codegen'
 import { assemble } from './assembler'
 import BundlerError from './error'
 
-import { MarkdownType } from '../markdown/types'
-import { BuildMode, Config, DocumentRegistry } from '../config/types'
 
 export interface RenderedDocument {
   title: string
@@ -62,35 +63,35 @@ export interface RenderedCategory {
   documents: DocumentMeta[]
 }
 
-function resolveRegistry (config: Config): Promise<DocumentRegistry> {
-  const path = join(config.workdir, config.documents.path)
+async function resolveRegistry (config: Config): Promise<DocumentRegistry> {
+  let path = join(config.workdir, config.documents.path)
   if (config.documents.source === 'filesystem') {
     if (!existsSync(path)) {
       throw new BundlerError(`Invalid configuration! The specified path does not exist! ${path}`)
     }
 
     return fsToRegistry(path)
-  } else {
-    if (!validateRegistry(path, config.documents.documents)) {
-      throw new BundlerError('Invalid documentation! Some documents in the registry could not be found.')
-    }
-
-    const documentCount = config.documents.documents
-      .map(d => typeof d === 'string' ? 1 : d.documents.length)
-      .reduce((a, b) => a + b)
-
-    return Promise.resolve({ documentCount, documents: config.documents.documents })
   }
+  if (!validateRegistry(path, config.documents.documents)) {
+    throw new BundlerError('Invalid documentation! Some documents in the registry could not be found.')
+  }
+
+  let documentCount = config.documents.documents
+    .map((d) => (typeof d === 'string' ? 1 : d.documents.length))
+    .reduce((a, b) => a + b)
+
+  return Promise.resolve({ documentCount, documents: config.documents.documents })
 }
 
 async function parseFile (file: string, mode: BuildMode): Promise<RenderedDocument> {
-  const md = await readFile(file, 'utf8')
-  const parsed = parseMarkdown(md)
-  const header = parsed.tree.find(n => n.type === MarkdownType.Heading && n.level === 1)
-  const parts = parsed.tree.filter(n => n.type === MarkdownType.Heading && n.level === 2)
-    .map(flattenToText).filter(Boolean) as string[]
+  let md = await readFile(file, 'utf8')
+  let parsed = parseMarkdown(md)
+  let header = parsed.tree.find((n) => n.type === MarkdownType.Heading && n.level === 1)
+  let parts = parsed.tree.filter((n) => n.type === MarkdownType.Heading && n.level === 2)
+    .map(flattenToText)
+    .filter(Boolean) as string[]
 
-  const title = header ? flattenToText(header) : null
+  let title = header ? flattenToText(header) : null
 
   if (!header || !title || !title.trim()) {
     throw new BundlerError(`Invalid document! Document ${basename(file)} did not contain a Heading 1, or no text could be extracted from it.`)
@@ -98,32 +99,32 @@ async function parseFile (file: string, mode: BuildMode): Promise<RenderedDocume
 
   return {
     title,
-    parts: parts.map(s => ({ id: sluggify(s), name: s })),
+    parts: parts.map((s) => ({ id: sluggify(s), name: s })),
     slug: sluggify(basename(file)),
-    code: markdownToCode(parsed.tree, mode)
+    code: markdownToCode(parsed.tree, mode),
   }
 }
 
-async function doBundle () {
-  const config = readConfig()
-  const registry = await resolveRegistry(config)
+async function doBundle (): Promise<void> {
+  let config = readConfig()
+  let registry = await resolveRegistry(config)
   log.debug(`Found ${registry.documentCount} documents to bundle to ${config.build.mode}.`)
 
   log.debug('Parsing markdown files')
-  const documents: RenderedDocument[] = []
-  const categories: RenderedCategory[] = []
-  for (const item of registry.documents) {
+  let documents: RenderedDocument[] = []
+  let categories: RenderedCategory[] = []
+  for (let item of registry.documents) {
     if (typeof item === 'string') {
-      const doc = await parseFile(item, config.build.mode)
+      let doc = await parseFile(item, config.build.mode)
       documents.push(doc)
       continue
     }
 
     // todo: category manifest
-    const categorySlug = sluggify(item.category)
-    const docs: DocumentMeta[] = []
-    for (const d of item.documents) {
-      const doc = await parseFile(d, config.build.mode)
+    let categorySlug = sluggify(item.category)
+    let docs: DocumentMeta[] = []
+    for (let d of item.documents) {
+      let doc = await parseFile(d, config.build.mode)
       doc.category = categorySlug
       documents.push(doc)
       docs.push({ title: doc.title, slug: doc.slug, parts: doc.parts })
@@ -137,13 +138,13 @@ async function doBundle () {
   }
 
   log.debug('Assemble app')
-  const assets = await assemble(categories, documents, config)
+  let assets = await assemble(categories, documents, config)
   await rmdirRf(config.build.target)
   await mkdir(config.build.target, { recursive: true })
   await Promise.all(
     assets.map(async function (asset) {
-      const path = join(config.build.target, asset.filename)
-      const dir = dirname(path)
+      let path = join(config.build.target, asset.filename)
+      let dir = dirname(path)
       if (!existsSync(dir)) await mkdir(dir, { recursive: true })
       await writeFile(path, asset.src)
     })
@@ -156,7 +157,7 @@ async function doBundle () {
 }
 
 export default async function bundle () {
-  const start = process.hrtime.bigint()
+  let start = process.hrtime.bigint()
   try {
     log.info('Bundling...')
     await doBundle()
@@ -165,7 +166,7 @@ export default async function bundle () {
     if (e instanceof BundlerError) log.error(e.message)
     else log.error('Failed to build the documentation!', e)
   } finally {
-    const end = process.hrtime.bigint()
+    let end = process.hrtime.bigint()
     log.info(`Took ${formatDelta(start, end)}`)
   }
 }

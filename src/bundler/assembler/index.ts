@@ -25,8 +25,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { RenderedCategory, RenderedDocument } from '..'
-import { Config } from '../../config/types'
+import type { RenderedCategory, RenderedDocument } from '..'
+import type { Config } from '../../config/types'
 
 import preact from './preact'
 
@@ -35,7 +35,8 @@ export interface Asset {
   src: string | Uint8Array
 }
 
-export function assemble (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
+export default async function assemble (categories: RenderedCategory[], documents: RenderedDocument[], config: Config): Promise<Asset[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- This will not always be the case
   if (config.build.mode === 'preact') {
     return preact(categories, documents, config)
   }

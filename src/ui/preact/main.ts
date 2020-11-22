@@ -25,43 +25,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-declare module '@sf/categories' {
-  export interface DocumentMeta {
-    title: string
-    slug: string
-    parts: Array<{ id: string, name: string }>
-  }
+import 'preact/debug' // todo: config
+import { h, render } from 'preact'
+import Layout from './Layout'
 
-  export interface Category {
-    title: string
-    slug: string
-    documents: DocumentMeta[]
-  }
-
-  const categories: {
-    uncategorized: DocumentMeta[]
-    categories: Category[]
-  }
-
-  export default categories;
-}
-
-declare module '@sf/documents' {
-  import { ComponentType } from 'preact'
-
-  export type LazyDocumentModule = () => Promise<{ default: ComponentType }>
-  export type DocumentModule<B extends Boolean> = B extends true ? LazyDocumentModule : ComponentType
-
-  export interface Document<B extends Boolean> {
-    doc: DocumentModule<B>
-    path: string
-  }
-
-  export interface Documents<B extends Boolean> {
-    documents: Array<Document<B>>
-    lazy: B
-  }
-
-  const documents: Documents<Boolean>
-  export default documents
-}
+let app = h(Layout, null)
+render(app, document.getElementById('react-root') as HTMLElement)

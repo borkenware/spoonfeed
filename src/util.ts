@@ -25,62 +25,65 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { join }  from 'path'
-import { existsSync }  from 'fs'
-import { readdir, lstat, unlink, rmdir }  from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
+import { readdir, lstat, unlink, rmdir } from 'fs/promises'
+
+const UNITS = [ 'ns', 'µs', 'ms', 's' ]
 
 export type ExtendedType = 'string' | 'number' | 'bigint' |
   'boolean' | 'symbol' | 'undefined' | 'object' | 'function' |
   'array' | 'null' | 'nan'
 
-const units = [ 'ns', 'µs', 'ms', 's' ]
+export function extendedTypeof (obj: unknown): ExtendedType {
+  if (typeof obj === 'object' && Array.isArray(obj)) return 'array'
+  if (typeof obj === 'object' && obj === null) return 'null'
+  if (typeof obj === 'number' && isNaN(obj)) return 'nan'
 
-export function extendedTypeof (obj: any): ExtendedType {
-  let type: ExtendedType = typeof obj
-  if (type === 'object' && Array.isArray(obj)) type = 'array'
-  if (type === 'object' && obj === null) type = 'null'
-  if (type === 'number' && isNaN(obj)) type = 'nan'
-
-  return type
+  return typeof obj
 }
 
-export function hasOwnProperty<X extends {}, Y extends PropertyKey>(obj: X, prop: Y): obj is X & Record<Y, any> {
+export function hasOwnProperty<TObject, TProp extends PropertyKey> (obj: TObject, prop: TProp): obj is TObject & Record<TProp, unknown> {
   return Object.prototype.hasOwnProperty.call(obj, prop)
 }
 
-export function formatDelta (from: bigint, to: bigint) {
+export function formatDelta (from: bigint, to: bigint): string {
   let passes = 0
   let delta = Number(to - from)
   while (delta > 2000 && passes < 4) {
-    delta = delta / 1000
+    delta /= 1000
     passes++
   }
 
-  return `${delta.toFixed(2)} ${units[passes]}`
+  return `${delta.toFixed(2)} ${UNITS[passes]}`
 }
 
-export function sluggify (string: string) {
+export function sluggify (string: string): string {
   return string.replace(/(^\d+-|\.(md|markdown)$)/ig, '')
-    .replace(/[^a-z]+/ig, '-').replace(/(^-+|-+$)/ig, '').toLowerCase()
+    .replace(/[^a-z]+/ig, '-')
+    .replace(/(^-+|-+$)/ig, '')
+    .toLowerCase()
 }
 
-export function slugToTitle (slug: string) {
-  return slug.split('-').map(s => s[0].toUpperCase() + s.slice(1).toLowerCase()).join(' ')
+export function slugToTitle (slug: string): string {
+  return slug.split('-')
+    .map((s) => s[0].toUpperCase() + s.slice(1).toLowerCase())
+    .join(' ')
 }
 
-export async function rmdirRf (path: string) {
+export async function rmdirRf (path: string): Promise<void> {
   if (existsSync(path)) {
-    const files = await readdir(path);
-    for (const file of files) {
-      const curPath = join(path, file);
-      const stat = await lstat(curPath);
+    let files = await readdir(path)
+    for (let file of files) {
+      let curPath = join(path, file)
+      let stat = await lstat(curPath)
 
       if (stat.isDirectory()) {
-        await rmdirRf(curPath);
+        await rmdirRf(curPath)
       } else {
-        await unlink(curPath);
+        await unlink(curPath)
       }
     }
-    await rmdir(path);
+    await rmdir(path)
   }
 }

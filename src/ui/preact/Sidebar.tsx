@@ -25,41 +25,48 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const cache: Record<string, object> = {}
-function r (modules: string | string[], resolve?: Function): object | Promise<object> {
-  if (Array.isArray(modules)) {
-    Promise.all(
-      modules.map(mdl =>
-        new Promise(resolve => {
-          const script = document.createElement('script')
-          script.src = '/dist/' + mdl.slice(2);
-          script.onload = () => resolve(cache[mdl])
-          document.head.appendChild(script);
-        })
-      )
-    ).then(m => resolve(...m))
-    return
-  }
+import { h, Fragment } from 'preact'
+import type { VNode } from 'preact'
+import { Link } from 'preact-router/match'
 
-  if (!cache[modules]) throw new Error('Module not found')
-  return cache[modules]
+/* eslint-disable import/no-unresolved -- Virtual modules handled by Rollup */
+import type { DocumentMeta } from '@sf/categories'
+import categories from '@sf/categories'
+/* eslint-enable import/no-unresolved */
+
+function Item (props: DocumentMeta & { category?: string }): VNode {
+  let path = `/${props.category ? `${props.category}/` : ''}${props.slug}`
+  return (
+    <Link activeClassName='active' className='sidebar-item' href={path}>
+      {props.title}
+    </Link>
+  )
 }
 
-(window as any).d = function d (id: string, deps: string[], mdl: Function) {
-  if (!mdl) {
-    mdl = deps as unknown as Function
-    deps = []
-  }
+function Items (props: { documents: DocumentMeta[], category?: string }): VNode {
+  return (
+    <>
+      {props.documents.map(
+        (doc) => <Item key={`${props.category ?? 'null'}--${doc.slug}`} category={props.category} {...doc}/>
+      )}
+    </>
+  )
+}
 
-  const e = {}
-  const args = []
-  for (let i = 0; i < deps.length; i++) {
-    const dep = deps[i]
-    if (dep === 'require') args.push(r)
-    else if (dep === 'exports') args.push(e)
-    else args.push(r(dep))
-  }
+export default function Sidebar (): VNode {
+  return (
+    <div className='sidebar'>
+      <div className='sidebar-logo'>
+        <span>Logo here</span> {/* todo */}
+      </div>
 
-  mdl.apply(null, args)
-  cache[id] = e
+      <Items documents={categories.uncategorized}/>
+      {categories.categories.map((cat) => (
+        <Fragment key={cat.slug}>
+          <h3 className='sidebar-category'>{cat.title}</h3>
+          <Items category={cat.slug} documents={cat.documents}/>
+        </Fragment>
+      ))}
+    </div>
+  )
 }

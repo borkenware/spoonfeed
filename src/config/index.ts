@@ -28,18 +28,18 @@
 import { existsSync } from 'fs'
 import { dirname, join } from 'path'
 
-import { Config } from './types'
-import validate from './validator'
 import { extendedTypeof } from '../util'
+import validate from './validator'
+import type { Config } from './types'
 
 interface ConfigPath { cfg: string | null, dir: string }
 
-const defConfig: Config = {
+const BaseConfig: Config = {
   workdir: '',
   documents: {
     source: 'filesystem',
     path: 'docs',
-    assets: 'assets'
+    assets: 'assets',
   },
   ui: {
     title: 'Documentation',
@@ -47,7 +47,7 @@ const defConfig: Config = {
     copyright: null,
     logo: null,
     favicon: null,
-    acknowledgements: true
+    acknowledgements: true,
   },
   build: {
     target: 'build',
@@ -55,64 +55,68 @@ const defConfig: Config = {
     optimizeImg: true,
     offline: true,
     mangle: true,
-    split: true
+    split: true,
   },
   ssr: {
     generate: false,
     redirectInsecure: false,
     http2: false,
-    ssl: null
-  }
+    ssl: null,
+  },
 }
 
-function mergeDeep (target: Record<string, any>, ...sources: Record<string, any>[]): object {
-  if (!sources.length) return target;
-  const source = sources.shift();
+function mergeDeep (target: Record<string, unknown>, ...sources: Array<Record<string, unknown>>): Record<string, unknown> {
+  if (!sources.length) return target
+  let source = sources.shift()
 
-  for (const key in source) {
+  for (let key in source) {
     if (extendedTypeof(source[key]) === 'object') {
-      if (!target[key]) Object.assign(target, { [key]: {} });
-      mergeDeep(target[key], source[key]);
+      if (!target[key]) Object.assign(target, { [key]: {} })
+      mergeDeep(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>)
     } else {
-      Object.assign(target, { [key]: source[key] });
+      Object.assign(target, { [key]: source[key] })
     }
   }
 
-  return mergeDeep(target, ...sources);
+  return mergeDeep(target, ...sources)
 }
 
 export function findConfig (dir: string | null = null): ConfigPath {
   if (!dir) dir = process.cwd()
 
   if (existsSync(join(dir, 'spoonfeed.config.js'))) {
-    return { cfg: join(dir, 'spoonfeed.config.js'), dir }
+    return { cfg: join(dir, 'spoonfeed.config.js'), dir: dir }
   }
 
   if (existsSync(join(dir, 'package.json'))) {
-    return { cfg: null, dir }
+    return { cfg: null, dir: dir }
   }
 
-  const next = dirname(dir)
+  let next = dirname(dir)
   if (next === dir) {
     // We reached system root
-    return { cfg: null, dir }
+    return { cfg: null, dir: dir }
   }
 
   return findConfig(next)
 }
 
 export default function readConfig (): Config {
-  let cfg = {}
-  const path = findConfig()
+  let cfg: Record<string, unknown> | void = {}
+  let path = findConfig()
   if (path.cfg) {
-    try { cfg = require(path.cfg) }
-    catch (e) { throw new SyntaxError(e) }
+    try {
+      // eslint-disable-next-line import/no-dynamic-require, @typescript-eslint/no-var-requires -- Allow explicitly
+      cfg = require(path.cfg) as Record<string, unknown> | void
+    } catch (e) {
+      throw new SyntaxError(e)
+    }
 
     if (!cfg) throw new Error('No config was exported')
     validate(cfg)
   }
 
-  const config = {}
-  mergeDeep(config, defConfig, cfg, { workdir: path.dir })
+  let config = {}
+  mergeDeep(config, BaseConfig, cfg, { workdir: path.dir })
   return config as Config
 }

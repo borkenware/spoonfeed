@@ -26,8 +26,8 @@
  */
 
 jest.mock('fs', function () {
-  const { Volume, createFsFromVolume } = require('memfs')
-  const memfs = createFsFromVolume(
+  let { Volume, createFsFromVolume } = require('memfs')
+  let memfs = createFsFromVolume(
     Volume.fromJSON({
       '/test/resolver/case1/package.json': '{}',
       '/test/resolver/case1/spoonfeed.config.js': 'module.exports = {}',
@@ -41,7 +41,7 @@ jest.mock('fs', function () {
       '/test/reader/case2/package.json': '{}',
       '/test/reader/case2/spoonfeed.config.js': 'module.exports = { ui: { title: "Test docs" }',
       '/test/reader/case3/package.json': '{}',
-      '/test/reader/case3/spoonfeed.config.js': 'const cfg = { ui: { title: "Test docs" } }',
+      '/test/reader/case3/spoonfeed.config.js': 'let cfg = { ui: { title: "Test docs" } }',
       '/test/reader/case4/package.json': '{}',
       '/test/reader/case4/spoonfeed.config.js': 'module.exports = "uwu"',
       '/test/reader/case5/package.json': '{}',
@@ -50,7 +50,7 @@ jest.mock('fs', function () {
     })
   )
 
-  const { existsSync } = memfs
+  let { existsSync } = memfs
   memfs.existsSync = jest.fn(existsSync)
   return memfs
 })
@@ -63,23 +63,23 @@ describe('resolver', function () {
   afterEach(() => (fs.existsSync as any).mockClear())
 
   test('resolves the config path', function () {
-    const res = findConfig('/test/resolver/case1')
+    let res = findConfig('/test/resolver/case1')
     expect(res.cfg).toBe('/test/resolver/case1/spoonfeed.config.js')
   })
 
   test('resolves the config path in a parent folder', function () {
-    const res = findConfig('/test/resolver/case2/src')
+    let res = findConfig('/test/resolver/case2/src')
     expect(res.cfg).toBe('/test/resolver/case2/spoonfeed.config.js')
   })
 
   test('stops at project root', function () {
-    const res = findConfig('/test/resolver/case3/src')
+    let res = findConfig('/test/resolver/case3/src')
     expect(res.cfg).toBeNull()
     expect(fs.existsSync).toHaveBeenCalledTimes(4)
   })
 
   test('stops at system root', function () {
-    const res = findConfig('/test/resolver')
+    let res = findConfig('/test/resolver')
     expect(res.cfg).toBeNull()
     expect(fs.existsSync).toHaveBeenCalledTimes(6)
   })
@@ -150,8 +150,8 @@ describe('reader', function () {
   function mockConfig (mockCwd) {
     process.cwd = () => mockCwd
     jest.mock(`${mockCwd}/spoonfeed.config.js`, function () {
-      const fs = jest.requireMock('fs')
-      const js = fs.readFileSync(`${mockCwd}/spoonfeed.config.js`, 'utf8')
+      let fs = jest.requireMock('fs')
+      let js = fs.readFileSync(`${mockCwd}/spoonfeed.config.js`, 'utf8')
       let module: any = {}
       eval(js)
       return module.exports

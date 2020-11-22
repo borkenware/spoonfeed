@@ -26,7 +26,7 @@
  */
 
 jest.mock('fs', function () {
-  const { Volume, createFsFromVolume } = require('memfs')
+  let { Volume, createFsFromVolume } = require('memfs')
   return createFsFromVolume(
     Volume.fromJSON({
       '/test/fs/case1/a.md': '',
@@ -48,7 +48,7 @@ jest.mock('fs', function () {
 })
 
 jest.mock('fs/promises', function () {
-  const fs = jest.requireMock('fs')
+  let fs = jest.requireMock('fs')
   return { readdir: (path: string) => Promise.resolve(fs.readdirSync(path)) }
 })
 
@@ -56,13 +56,13 @@ import fsToRegistry from '../src/filesystem'
 
 describe('filesystem crawler', function () {
   test('finds files', async function () {
-    const res = await fsToRegistry('/test/fs/case1')
+    let res = await fsToRegistry('/test/fs/case1')
     expect(res.documentCount).toBe(2)
     expect(res.documents.length).toBe(2)
   })
 
   test('crawls categories', async function () {
-    const res = await fsToRegistry('/test/fs/case2')
+    let res = await fsToRegistry('/test/fs/case2')
     expect(res.documentCount).toBe(4)
     expect(res.documents.length).toBe(2)
     expect(typeof res.documents[0]).toBe('object')
@@ -72,13 +72,13 @@ describe('filesystem crawler', function () {
   })
 
   test('ignores non-md files', async function () {
-    const res = await fsToRegistry('/test/fs/case3')
+    let res = await fsToRegistry('/test/fs/case3')
     expect(res.documentCount).toBe(2)
     expect(res.documents.length).toBe(2)
   })
 
   test('ignores sub-categories', async function () {
-    const res = await fsToRegistry('/test/fs/case4')
+    let res = await fsToRegistry('/test/fs/case4')
     expect(res.documentCount).toBe(4)
     expect(res.documents.length).toBe(2)
     expect(typeof res.documents[0]).toBe('object')

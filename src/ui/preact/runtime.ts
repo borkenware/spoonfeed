@@ -25,31 +25,50 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** @jsx h */
-import { h, Fragment } from 'preact'
-import Router, { RoutableProps } from 'preact-router'
-import documents, { DocumentModule, LazyDocumentModule } from '@sf/documents'
-import Sidebar from './Sidebar'
-import LazyRoute from './LazyRoute'
-
-function Route<B extends Boolean = Boolean> (props: { doc: DocumentModule<B>, lazy: B } & RoutableProps) {
-  if (props.lazy) {
-    return <LazyRoute component={props.doc as LazyDocumentModule}/>
-  }
-  return null
+interface Window { // eslint-disable-line @typescript-eslint/no-unused-vars -- This is used to allow assigning d
+  d: (id: string, deps: string[], mdl?: (...modules: unknown[]) => unknown) => void
 }
 
-export default function Layout () {
-  return (
-    <Fragment>
-      <Sidebar/>
-      <main>
-        <div className='container'>
-          <Router>
-            {documents.documents.map(doc => <Route key={doc.path} path={doc.path} doc={doc.doc} lazy={documents.lazy}/>)}
-          </Router>
-        </div>
-      </main>
-    </Fragment>
-  )
+let cache: Record<string, unknown> = {}
+
+function r (query: string | string[], res?: (...modules: unknown[]) => void): unknown | Promise<unknown> {
+  if (Array.isArray(query)) {
+    let promise = Promise.all(
+      query.map(
+        async (q) =>
+          new Promise((resolve) => {
+            let script = document.createElement('script')
+            script.src = `/dist/${q.slice(2)}`
+            script.onload = (): void => { resolve(cache[q]) }
+            document.head.appendChild(script)
+          })
+      )
+    )
+
+    promise
+      .then((m) => res?.(...m))
+      .catch((e) => console.error('Failed to load module', e))
+    return
+  }
+
+  if (!cache[query]) throw new Error('Module not found')
+  return cache[query]
+}
+
+window.d = function d (id: string, deps: string[], mdl?: (...modules: unknown[]) => unknown): void {
+  if (!mdl) {
+    mdl = deps as unknown as (...modules: unknown[]) => unknown
+    deps = []
+  }
+
+  let e = {}
+  let args = []
+  for (let dep of deps) {
+    if (dep === 'require') args.push(r)
+    else if (dep === 'exports') args.push(e)
+    else args.push(r(dep))
+  }
+
+  mdl.apply(null, args)
+  cache[id] = e
 }

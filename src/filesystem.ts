@@ -26,12 +26,12 @@
  */
 
 import { join } from 'path'
-import { statSync, existsSync } from 'fs'
-import { readdir as fsReaddir } from 'fs/promises'
+import { existsSync } from 'fs'
+import { stat, readdir as fsReaddir } from 'fs/promises'
 
-import { DocumentRegistry, RawDocumentRegistry } from './config/types'
+import type { DocumentRegistry, RawDocumentRegistry } from './config/types'
 
-const md = /\.(md|markdown)$/i
+let md = /\.(md|markdown)$/i
 
 interface ReaddirResult {
   folders: string[]
@@ -39,27 +39,28 @@ interface ReaddirResult {
 }
 
 async function readdir (folder: string): Promise<ReaddirResult> {
-  const files: string[] = []
-  const folders: string[] = []
+  let files: string[] = []
+  let folders: string[] = []
 
-  for (const file of await fsReaddir(folder)) {
-    if (statSync(join(folder, file)).isDirectory()) {
+  for (let file of await fsReaddir(folder)) {
+    let fileStat = await stat(join(folder, file))
+    if (fileStat.isDirectory()) {
       folders.push(file)
     } else if (md.test(file)) {
       files.push(file)
     }
   }
 
-  return { files, folders }
+  return { files: files, folders: folders }
 }
 
 export function validateRegistry (basepath: string, registry: RawDocumentRegistry): boolean {
-  for (const r of registry) {
+  for (let r of registry) {
     if (typeof r === 'string') {
       if (!existsSync(join(basepath, r))) return false
     } else {
-      const base = join(basepath, r.category)
-      for (const d of r.documents) {
+      let base = join(basepath, r.category)
+      for (let d of r.documents) {
         if (!existsSync(join(base, d))) return false
       }
     }
@@ -69,19 +70,19 @@ export function validateRegistry (basepath: string, registry: RawDocumentRegistr
 }
 
 export default async function fsToRegistry (basepath: string): Promise<DocumentRegistry> {
-  const registry: DocumentRegistry = {
+  let registry: DocumentRegistry = {
     documentCount: 0,
-    documents: []
+    documents: [],
   }
 
-  const res = await readdir(basepath)
+  let res = await readdir(basepath)
   registry.documentCount += res.files.length
-  registry.documents.push(...res.files.map(f => join(basepath, f)))
-  for (const folder of res.folders) {
-    const { files } = await readdir(join(basepath, folder))
-    const documents = files.map(f => join(basepath, folder, f))
+  registry.documents.push(...res.files.map((f) => join(basepath, f)))
+  for (let folder of res.folders) {
+    let { files } = await readdir(join(basepath, folder))
+    let documents = files.map((f) => join(basepath, folder, f))
     registry.documentCount += documents.length
-    registry.documents.push({ category: folder, documents })
+    registry.documents.push({ category: folder, documents: documents })
   }
 
   return registry

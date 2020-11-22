@@ -28,13 +28,13 @@
 import { RenderedCategory, RenderedDocument } from '../..'
 
 export default function (categories: RenderedCategory[], documents: RenderedDocument[], lazy: boolean) {
-  const knownSlugs = documents.map(d => `${d.category ? `${d.category}/` : ''}${d.slug}`)
-  const uncategorized = documents.filter(d => !d.category).map(doc => ({ title: doc.title, slug: doc.slug, parts: doc.parts }))
+  let knownSlugs = documents.map(d => `${d.category ? `${d.category}/` : ''}${d.slug}`)
+  let uncategorized = documents.filter(d => !d.category).map(doc => ({ title: doc.title, slug: doc.slug, parts: doc.parts }))
 
   return {
     name: 'spoonfeed-virtual',
     resolveId (src: string) {
-      const known = [ '@sf/categories', '@sf/documents' ].includes(src) ||
+      let known = [ '@sf/categories', '@sf/documents' ].includes(src) ||
         (src.startsWith('@sf/doc/') && knownSlugs.includes(src.slice(8, -3)))
 
       if (known) return src
@@ -48,11 +48,11 @@ export default function (categories: RenderedCategory[], documents: RenderedDocu
       if (id === '@sf/documents') {
         let imports = ''
         let mdl = `export default { lazy: ${String(lazy)}, documents: [`
-        for (const doc of documents) {
-          const path = `${doc.category ? `${doc.category}/` : ''}${doc.slug}`
-          const mod = `@sf/doc/${path}.js`
-          const id = `_${Math.random().toString(36).slice(2)}`
-          imports += lazy ? `const ${id} = () => import('${mod}')\n` : `import ${id} from '${mod}'\n`
+        for (let doc of documents) {
+          let path = `${doc.category ? `${doc.category}/` : ''}${doc.slug}`
+          let mod = `@sf/doc/${path}.js`
+          let id = `_${Math.random().toString(36).slice(2)}`
+          imports += lazy ? `let ${id} = () => import('${mod}')\n` : `import ${id} from '${mod}'\n`
           mdl += `{ path: '${path}', doc: ${id} },`
         }
         mdl += '] }'
@@ -60,9 +60,9 @@ export default function (categories: RenderedCategory[], documents: RenderedDocu
       }
 
       if (id.startsWith('@sf/doc/')) {
-        const doc = id.slice(8, -3)
+        let doc = id.slice(8, -3)
         if (doc.includes('/')) {
-          const [ cat, slug ] = doc.split('/')
+          let [ cat, slug ] = doc.split('/')
           return documents.find(d => d.category === cat && d.slug === slug)!!.code
         }
 

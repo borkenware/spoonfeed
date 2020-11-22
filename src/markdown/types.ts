@@ -25,6 +25,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* eslint-disable eslint-comments/no-unlimited-disable -- no */
+/* eslint-disable -- to be deleted */
+/* eslint-enable eslint-comments/no-unlimited-disable */
+
 export enum MarkdownType {
   // Blocks
   Comment = 'comment',
@@ -56,7 +60,7 @@ export enum MarkdownType {
   // Specifics
   LineBreak = 'line-break',
   HttpMethod = 'http-method',
-  HttpParam = 'http-param'
+  HttpParam = 'http-param',
 }
 
 export type MarkdownRawItem = RawMarkdownNode[] | RawMarkdownNode | string
@@ -102,7 +106,7 @@ export interface MarkdownCodeNode {
 export interface MarkdownListNode {
   type: MarkdownType.List
   ordered: boolean
-  content: (MarkdownListNode | MarkdownSimpleNode)[]
+  content: Array<MarkdownListNode | MarkdownSimpleNode>
 }
 
 export interface MarkdownHttpNode {
@@ -160,3 +164,5 @@ export type MarkdownNode = MarkdownSimpleNode | MarkdownEmptyNode | MarkdownComm
   MarkdownImageNode | MarkdownVideoNode
 
 export type MarkdownAstTree = { tree: MarkdownNode[] }
+
+/* eslint-enable */

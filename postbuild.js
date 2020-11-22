@@ -30,8 +30,12 @@ const { readFileSync, writeFileSync } = require('fs')
 const { execSync } = require('child_process')
 
 // Replace contributors count
-const contribCount = execSync(`git --no-pager shortlog -s -n --no-merges`, { stdio: [ 'inherit', 'pipe', 'pipe' ]})
-  .toString().split('\n').filter(Boolean).length
+let contribCount = execSync('git --no-pager shortlog -s -n --no-merges', { stdio: [ 'inherit', 'pipe', 'pipe' ] })
+  .toString()
+  .split('\n')
+  .filter(Boolean)
+  .length
 
-const sfCli = join(__dirname, 'dist/cli/spoonfeed.js')
-writeFileSync(sfCli, readFileSync(sfCli, 'utf8').replace('##{CONTRIBUTORS}', contribCount), 'utf8')
+let sfCli = join(__dirname, 'dist/cli.js')
+let src = readFileSync(sfCli, 'utf8')
+writeFileSync(sfCli, src.replace('##{CONTRIBUTORS}', contribCount), 'utf8')

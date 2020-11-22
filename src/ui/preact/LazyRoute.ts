@@ -25,15 +25,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { h, ComponentType } from 'preact'
+import { h } from 'preact'
+import type { ComponentType, VNode } from 'preact'
 import { useState, useEffect } from 'preact/hooks'
 
-interface LazyRouteProps<ChildProps> { component: () => Promise<{ default: ComponentType<ChildProps> }> }
+interface LazyRouteProps<TChildProps> { component: () => Promise<{ default: ComponentType<TChildProps> }> }
 
-export default function LazyRoute<ChildProps = {}> (props: LazyRouteProps<ChildProps> & ChildProps) {
-  const [ component, setComponent ] = useState<ComponentType<ChildProps> | null>(null)
-  useEffect(() => void props.component().then(c => setComponent(() => c.default)), [])
+export default function LazyRoute<TChildProps = Record<string, unknown>> (props: LazyRouteProps<TChildProps> & TChildProps): VNode {
+  let [ component, setComponent ] = useState<ComponentType<TChildProps> | null>(null)
+  useEffect(() => void props.component().then((c) => setComponent(() => c.default)), [])
 
-  if (component) return h(component, props)
-  return h('div', null, 'Loading...') // todo
+  if (component) return h(component, props) as VNode<unknown>
+  return h('div', null, 'Loading...') as VNode<unknown> // todo
 }
