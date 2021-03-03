@@ -21,7 +21,7 @@ yarn add @borkenware/spoonfeed
 pnpm i @borkenware/spoonfeed
 ```
 
-See USAGE.md for information about how to use this.
+See [USAGE.md](USAGE.md) for information about how to use this.
 
 ## Why?
 Writing documentation is already a boring process, and the documentation team may not have time to put into
