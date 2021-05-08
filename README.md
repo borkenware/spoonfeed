@@ -10,6 +10,8 @@ This project is a heavy WIP and is not usable yet.
 --------
 
 ## Installation
+This package hasn't been published yet.
+<!--
 ```zsh
 # With npm:
 npm i @borkenware/spoonfeed
@@ -20,6 +22,7 @@ yarn add @borkenware/spoonfeed
 # With pnpm:
 pnpm i @borkenware/spoonfeed
 ```
+-->
 
 See USAGE.md for information about how to use this.
 

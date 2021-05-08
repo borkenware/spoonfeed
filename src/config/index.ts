@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,12 +25,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import type { Config } from '../types/config.js'
+
 import { existsSync } from 'fs'
 import { dirname, join } from 'path'
 
-import { extendedTypeof } from '../util'
-import validate from './validator'
-import type { Config } from './types'
+import { extendedTypeof } from '../util.js'
+import validate from './validator.js'
 
 interface ConfigPath { cfg: string | null, dir: string }
 
@@ -67,9 +68,9 @@ const BaseConfig: Config = {
 
 function mergeDeep (target: Record<string, unknown>, ...sources: Array<Record<string, unknown>>): Record<string, unknown> {
   if (!sources.length) return target
-  let source = sources.shift()
+  const source = sources.shift()
 
-  for (let key in source) {
+  for (const key in source) {
     if (extendedTypeof(source[key]) === 'object') {
       if (!target[key]) Object.assign(target, { [key]: {} })
       mergeDeep(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>)
@@ -92,7 +93,7 @@ export function findConfig (dir: string | null = null): ConfigPath {
     return { cfg: null, dir: dir }
   }
 
-  let next = dirname(dir)
+  const next = dirname(dir)
   if (next === dir) {
     // We reached system root
     return { cfg: null, dir: dir }
@@ -101,13 +102,12 @@ export function findConfig (dir: string | null = null): ConfigPath {
   return findConfig(next)
 }
 
-export default function readConfig (): Config {
+export default async function readConfig (): Promise<Config> {
   let cfg: Record<string, unknown> | void = {}
-  let path = findConfig()
+  const path = findConfig()
   if (path.cfg) {
     try {
-      // eslint-disable-next-line import/no-dynamic-require, @typescript-eslint/no-var-requires -- Allow explicitly
-      cfg = require(path.cfg) as Record<string, unknown> | void
+      cfg = await import(path.cfg).then((m) => m?.default) as Record<string, unknown> | void
     } catch (e) {
       throw new SyntaxError(e)
     }
@@ -116,7 +116,7 @@ export default function readConfig (): Config {
     validate(cfg)
   }
 
-  let config = {}
+  const config = {}
   mergeDeep(config, BaseConfig, cfg, { workdir: path.dir })
   return config as Config
 }

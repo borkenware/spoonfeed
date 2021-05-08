@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,9 +25,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import type { ExtendedType } from '../util'
-import { hasOwnProperty, extendedTypeof } from '../util'
-import type { Config } from './types'
+import type { ExtendedType } from '../util.js'
+import { extendedTypeof } from '../util.js'
+import type { Config } from './types.js'
 
 type Schema = Record<string, SchemaItem>
 
@@ -56,7 +56,7 @@ interface SchemaItemNested {
 
 enum ErrorTypes { TYPE, VALUE, ARRAY }
 
-let schema: Schema = {
+const schema: Schema = {
   documents: {
     schema: {
       source: { values: [ 'filesystem', 'registry' ] },
@@ -104,7 +104,6 @@ let schema: Schema = {
       redirectInsecure: { types: 'boolean' },
       http2: { types: 'boolean' },
       ssl: {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-nullish-coalescing -- Intentional untrusted user input
         required: (c): boolean => Boolean(c?.ssr?.http2 || c?.ssr?.redirectInsecure),
         schema: {
           cert: { required: true, types: 'string' },
@@ -117,22 +116,22 @@ let schema: Schema = {
 
 function validateType (value: unknown, item: SchemaItem, full: Record<string, unknown>, prefix: string, tc: boolean = false): ErrorTypes | void {
   /* istanbul ignore else */
-  if (hasOwnProperty(item, 'types')) {
-    let types = Array.isArray(item.types) ? item.types : [ item.types ]
-    let type = extendedTypeof(value)
+  if ('types' in item) {
+    const types = Array.isArray(item.types) ? item.types : [ item.types ]
+    const type = extendedTypeof(value)
     if (!types.includes(type)) return ErrorTypes.TYPE
 
-    if (type === 'array' && hasOwnProperty(item, 'of')) {
-      let array = value as unknown[]
-      for (let val of array) {
+    if (type === 'array' && 'of' in item) {
+      const array = value as unknown[]
+      for (const val of array) {
         if (item.of.every((sc) => typeof validateType(val, sc, full, prefix, true) !== 'undefined')) {
           return ErrorTypes.ARRAY
         }
       }
     }
-  } else if (hasOwnProperty(item, 'values')) {
+  } else if ('values' in item) {
     if (!item.values.includes(value as string)) return ErrorTypes.VALUE
-  } else if (hasOwnProperty(item, 'schema')) {
+  } else if ('schema' in item) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define -- Recursive call
       validateSchema(item.schema, value as Record<string, unknown>, full, prefix)
@@ -144,27 +143,27 @@ function validateType (value: unknown, item: SchemaItem, full: Record<string, un
 }
 
 function validateSchema (schem: Schema, object: Record<string, unknown>, full?: Record<string, unknown>, prefix: string = ''): void {
-  let rootType = extendedTypeof(object)
+  const rootType = extendedTypeof(object)
   if (rootType !== 'object') {
     throw new TypeError(`Invalid field type: expected object, got ${rootType} for ${prefix || 'root'}`)
   }
 
   if (!full) full = object
-  for (let [ key, item ] of Object.entries(schem)) {
-    let required = item.required ?
-      typeof item.required === 'function' ? item.required(full as unknown as Config) : item.required :
-      false
+  for (const [ key, item ] of Object.entries(schem)) {
+    const required = item.required
+      ? typeof item.required === 'function' ? item.required(full as unknown as Config) : item.required
+      : false
 
-    if (hasOwnProperty(object, key)) {
-      let error = validateType(object[key], item, full, `${prefix}${key}.`)
+    if (key in object) {
+      const error = validateType(object[key], item, full, `${prefix}${key}.`)
       switch (error) {
         case ErrorTypes.TYPE: {
-          let i = item as SchemaItemType
-          let types = Array.isArray(i.types) ? i.types : [ i.types ]
+          const i = item as SchemaItemType
+          const types = Array.isArray(i.types) ? i.types : [ i.types ]
           throw new TypeError(`Invalid field type: expected ${types.join(' or ')}, got ${extendedTypeof(object[key])} for ${prefix}${key}`)
         }
         case ErrorTypes.VALUE: {
-          let i = item as SchemaItemValues
+          const i = item as SchemaItemValues
           throw new TypeError(`Invalid field value: expected ${i.values.map((s: string) => `"${s}"`).join(' or ')}, got ${object[key] as string} for ${prefix}${key}`)
         }
         case ErrorTypes.ARRAY:

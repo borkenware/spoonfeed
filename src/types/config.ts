@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,48 +25,70 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { h, Fragment } from 'preact'
-import type { VNode } from 'preact'
-import { Link } from 'preact-router/match'
-
-/* eslint-disable import/no-unresolved -- Virtual modules handled by Rollup */
-import type { DocumentMeta } from '@sf/categories'
-import categories from '@sf/categories'
-/* eslint-enable import/no-unresolved */
-
-function Item (props: DocumentMeta & { category?: string }): VNode {
-  let path = `/${props.category ? `${props.category}/` : ''}${props.slug}`
-  return (
-    <Link activeClassName='active' className='sidebar-item' href={path}>
-      {props.title}
-    </Link>
-  )
+export interface ConfigDocumentsFs {
+  source: 'filesystem'
+  assets: string
+  path: string
 }
 
-function Items (props: { documents: DocumentMeta[], category?: string }): VNode {
-  return (
-    <>
-      {props.documents.map(
-        (doc) => <Item key={`${props.category ?? 'null'}--${doc.slug}`} category={props.category} {...doc}/>
-      )}
-    </>
-  )
+export interface ConfigDocumentsRegistry {
+  source: 'registry'
+  assets: string
+  path: string
+  documents: RawDocumentRegistry
 }
 
-export default function Sidebar (): VNode {
-  return (
-    <div className='sidebar'>
-      <div className='sidebar-logo'>
-        <span>Logo here</span> {/* todo */}
-      </div>
+export interface RegistryCategory {
+  category: string
+  documents: string[]
+}
 
-      <Items documents={categories.uncategorized}/>
-      {categories.categories.map((cat) => (
-        <Fragment key={cat.slug}>
-          <h3 className='sidebar-category'>{cat.title}</h3>
-          <Items category={cat.slug} documents={cat.documents}/>
-        </Fragment>
-      ))}
-    </div>
-  )
+export type RawDocumentRegistry = Array<RegistryCategory | string>
+
+export type DocumentRegistry = {
+  documentCount: number
+  documents: RawDocumentRegistry
+}
+
+export type BuildMode = 'preact'
+
+export interface ConfigSsr {
+  generate: boolean
+  redirectInsecure: boolean
+  http2: false
+  ssl: null | {
+    cert: string
+    key: string
+  }
+}
+
+export interface ConfigSsrH2 {
+  generate?: boolean
+  redirectInsecure?: boolean
+  http2: true
+  ssl: {
+    cert: string
+    key: string
+  }
+}
+
+export interface Config extends Record<string, unknown> {
+  documents: ConfigDocumentsFs | ConfigDocumentsRegistry
+  ui: {
+    title: string
+    description: string
+    copyright: string | null
+    logo: string | null
+    favicon: string | null
+    acknowledgements: boolean
+  }
+  build: {
+    target: string
+    mode: BuildMode
+    optimizeImg: boolean
+    offline: boolean
+    mangle: boolean
+    split: boolean
+  }
+  ssr: ConfigSsr | ConfigSsrH2
 }

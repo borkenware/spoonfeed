@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,10 +25,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { hasOwnProperty } from '../util'
-
-import { MarkdownType } from '@t/markdown'
-import type { MarkdownNode, ParserBlockRule, ParserInlineRule, ParsedNode } from '@t/markdown'
+import { MarkdownType } from '../types/markdown.js'
+import type { MarkdownNode, ParserBlockRule, ParserInlineRule, ParsedNode } from '../types/markdown.js'
 
 interface InlineParseMatch {
   start: number
@@ -39,13 +37,13 @@ interface InlineParseMatch {
 }
 
 function findTextNodes (nodes: Array<MarkdownNode | string>): string[] {
-  let found = []
+  const found = []
 
-  for (let node of nodes) {
+  for (const node of nodes) {
     if (typeof node === 'string') found.push(node)
-    if (hasOwnProperty(node, 'content')) {
+    else if ('content' in node) {
       if (node.type === MarkdownType.TEXT && typeof node.content === 'string') found.push(node.content)
-      let items = Array.isArray(node.content) ? node.content : [ node.content ]
+      const items = Array.isArray(node.content) ? node.content : [ node.content ]
       found.concat(findTextNodes(items))
     }
   }
@@ -54,31 +52,31 @@ function findTextNodes (nodes: Array<MarkdownNode | string>): string[] {
 }
 
 export function parseBlocks (ruleset: ParserBlockRule[], markdown: string): ParsedNode[] {
-  let buffer: Array<string | ParsedNode> = [ markdown ]
+  const buffer: Array<string | ParsedNode> = [ markdown ]
 
-  for (let rule of ruleset) {
+  for (const rule of ruleset) {
     for (let i = 0; i < buffer.length; i++) {
-      let item = buffer[i]
+      let item: string | ParsedNode = buffer[i]
       if (typeof item !== 'string') continue
 
       let delta = 0
-      let matches = typeof rule.regexp === 'function' ? rule.regexp(item) : item.matchAll(rule.regexp)
-      for (let match of matches) {
-        if (!match.index) continue
-        let index = match.index - delta
+      const matches = typeof rule.regexp === 'function' ? rule.regexp(item) : item.matchAll(rule.regexp)
+      for (const match of matches) {
+        if (typeof match.index === 'undefined') continue
+        const index = match.index - delta
 
-        let before = item.slice(0, index)
-        let after = item.slice(index + match[0].length)
-        let block = {
+        const before = item.slice(0, index)
+        const after = item.slice(index + match[0].length)
+        const block = {
           node: rule.type,
           markup: rule.noTrim ? match[0] : match[0].trim(),
         }
 
-        let newItems = [ before, block, after ].filter(Boolean)
+        const newItems = [ before, block, after ].filter(Boolean)
         buffer.splice(i, 1, ...newItems)
 
         delta += index + match[0].length
-        i += before ? 2 : 1
+        item = buffer[i += before ? 2 : 1] as string
       }
     }
   }
@@ -87,11 +85,11 @@ export function parseBlocks (ruleset: ParserBlockRule[], markdown: string): Pars
 }
 
 export function parseInline (ruleset: ParserInlineRule[], markdown: string): ParsedNode[] {
-  let found: InlineParseMatch[] = []
+  const found: InlineParseMatch[] = []
 
-  for (let rule of ruleset) {
-    for (let match of markdown.matchAll(rule.regexp)) {
-      if (!match.index) continue
+  for (const rule of ruleset) {
+    for (const match of markdown.matchAll(rule.regexp)) {
+      if (typeof match.index === 'undefined') continue
       found.push({
         start: match.index,
         end: match.index + match[0].length,
@@ -102,10 +100,10 @@ export function parseInline (ruleset: ParserInlineRule[], markdown: string): Par
     }
   }
 
-  let sorted = found.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : 0)
-  let res: ParsedNode[] = []
+  const sorted = found.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : 0)
+  const res: ParsedNode[] = []
   let cursor = 0
-  for (let match of sorted) {
+  for (const match of sorted) {
     if (match.start < cursor) continue
     if (match.start - cursor > 0) {
       res.push({
@@ -133,7 +131,7 @@ export function parseInline (ruleset: ParserInlineRule[], markdown: string): Par
 
 export function flattenToText (node: MarkdownNode): string | null {
   if (node.type === MarkdownType.TEXT) return node.content
-  if (hasOwnProperty(node, 'content') && Array.isArray(node.content)) {
+  if ('content' in node && Array.isArray(node.content)) {
     return findTextNodes(node.content)
       .filter(Boolean)
       .join(' ')

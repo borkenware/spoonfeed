@@ -4,35 +4,27 @@
     "alwaysStrict": true,
     "strictNullChecks": true,
     "strictBindCallApply": true,
-    "strictFunctionTypes": true, 
+    "strictFunctionTypes": true,
     "strictPropertyInitialization": true,
-  
+    "incremental": true,
+
     "noEmitOnError": true,
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitAny": true,
     "allowUnreachableCode": false,
+    "allowSyntheticDefaultImports": true,
     "allowJs": false,
-
-    "lib": [ "es2020.string", "es2020.bigint" ],
-    "baseUrl": "src",
-    "paths": {
-      "@markdown/*": [ "markdown/*" ],
-      "@bundler/*": [ "bundler/*" ],
-      "@config/*": [ "config/*" ],
-      "@t/*": [ "types/*" ]
-    },
 
     "jsx": "react",
     "jsxFactory": "h",
     "jsxFragmentFactory": "Fragment",
-
-    "target": "es6",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "declaration": true,
-    "outDir": "./dist"
+    "lib": [ "es2020" ],
+    "target": "es2020",
+    "module": "esnext",
+    "outDir": "./dist",
+    "declaration": true
   },
-  "include": [ "src/**/*" ]
+  "include": [ "./src/**/*" ]
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,21 +25,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { parseBlocks } from './util'
-import parseInlineMarkup from './inline'
+import { parseBlocks } from './util.js'
+import parseInlineMarkup from './inline.js'
 
-import { MarkdownType } from '@t/markdown'
+import { MarkdownType } from '../types/markdown.js'
 import type {
   ParsedNode, MarkdownNode, SimpleMarkdownNode, ComposedMarkdownNode, HeadingMarkdownNode,
   NoteMarkdownNode, ListMarkdownNode, CodeBlockMarkdownNode, HttpItemMarkdownNode,
   HttpMarkdownNode, ListItemMarkdownNode, TableMarkdownNode,
-} from '@t/markdown'
+} from '../types/markdown.js'
 
 function findTables (markdown: string): RegExpMatchArray[] {
-  let matches = markdown.matchAll(/^(?:\|[^\n|]+)+\|\n(?:\|(?::-{2,}:| ?-{2,} ?))+\|\n(?:(?:\|[^\n|]+)+\|(?:\n|$))+/gim)
-  let filtered = []
-  for (let match of matches) {
-    let pipes = match[0].split('\n').filter(Boolean)
+  const matches = markdown.matchAll(/^(?:\|[^\n|]+)+\|\n(?:\|(?::-{2,}:| ?-{2,} ?))+\|\n(?:(?:\|[^\n|]+)+\|(?:\n|$))+/gim)
+  const filtered = []
+  for (const match of matches) {
+    const pipes = match[0].split('\n').filter(Boolean)
       .map((l) => l.match(/(?<!\\)\|/g)?.length ?? 0)
 
     if (pipes.every((p) => pipes[0] === p)) filtered.push(match)
@@ -48,12 +48,12 @@ function findTables (markdown: string): RegExpMatchArray[] {
 }
 
 const BLOCK_RULE_SET = [
-  { regexp: /<!--[\n.]*?-->/gim, type: MarkdownType.COMMENT },
+  { regexp: /<!--(?:.|\n)*?-->/img, type: MarkdownType.COMMENT },
   { regexp: /^#{1,6} [^\n]+/gim, type: MarkdownType.HEADING },
   { regexp: /^[^\n]+\n[=-]{2,}/gim, type: MarkdownType.HEADING },
-  { regexp: /^> ?(?:info|warn|danger)\n(?:(?<!\\)> [^\n]*(?:\n|$))+/gim, type: MarkdownType.NOTE },
-  { regexp: /^(?:> [^\n]*(?:\n|$))+/gim, type: MarkdownType.QUOTE },
-  { regexp: /^```[^\n]*\n[\n.]+?\n```/gim, type: MarkdownType.CODE_BLOCK },
+  { regexp: /^> ?(?:info|warn|danger)\n(?:(?<!\\)> ?[^\n]*(?:\n|$))+/gim, type: MarkdownType.NOTE },
+  { regexp: /^(?:> ?[^\n]*(?:\n|$))+/gim, type: MarkdownType.QUOTE },
+  { regexp: /^```[^\n]*\n(?:\n|.)+?\n```/gim, type: MarkdownType.CODE_BLOCK },
   { regexp: /(?:^ *(?<!\\)(?:[*+-]|\d\.) [^\n]+(?:\n|$))+/gim, type: MarkdownType.LIST, noTrim: true },
   { regexp: findTables, type: MarkdownType.TABLE },
   { regexp: /^%% (?:get|post|put|patch|delete|head) [^\n]+$/gim, type: MarkdownType.HTTP },
@@ -77,7 +77,7 @@ function parseHeader (node: ParsedNode): HeadingMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
   if (node.markup.startsWith('#')) {
-    let [ h, ...title ] = node.markup.split(' ')
+    const [ h, ...title ] = node.markup.split(' ')
     return {
       type: MarkdownType.HEADING,
       level: h.length as 1 | 2 | 3 | 4 | 5 | 6,
@@ -104,7 +104,7 @@ function parseParagraph (node: ParsedNode): ComposedMarkdownNode {
 function parseNote (node: ParsedNode): NoteMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let [ kind, ...inner ] = node.markup.split('\n')
+  const [ kind, ...inner ] = node.markup.split('\n')
   return {
     type: MarkdownType.NOTE,
     kind: kind.slice(1) as 'info' | 'warn' | 'danger',
@@ -128,14 +128,14 @@ function parseQuote (node: ParsedNode): ComposedMarkdownNode {
 }
 
 function doParseList (list: string): ListMarkdownNode {
-  let rawItems = list.split('\n').filter(Boolean)
-  let content: Array<ListMarkdownNode | ListItemMarkdownNode> = []
-  let baseTab = /^ */.exec(rawItems[0])?.[0]?.length ?? 0
+  const rawItems = list.split('\n').filter(Boolean)
+  const content: Array<ListMarkdownNode | ListItemMarkdownNode> = []
+  const baseTab = /^ */.exec(rawItems[0])?.[0]?.length ?? 0
   let accumulating = false
   let buffer: string[] = []
 
-  for (let item of rawItems) {
-    let tab = /^ */.exec(item)?.[0]?.length ?? 0
+  for (const item of rawItems) {
+    const tab = /^ */.exec(item)?.[0]?.length ?? 0
     if (accumulating && tab === baseTab) {
       content.push(doParseList(buffer.join('\n')))
       accumulating = false
@@ -171,12 +171,12 @@ function parseList (node: ParsedNode): ListMarkdownNode {
 function parseHttp (node: ParsedNode): HttpMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let route: HttpItemMarkdownNode[] = []
-  let exec = /^%% (?:get|post|put|patch|delete|head) ([^\n]+)/i.exec(node.markup)
+  const route: HttpItemMarkdownNode[] = []
+  const exec = /^%% (?:get|post|put|patch|delete|head) ([^\n]+)/i.exec(node.markup)
   if (!exec) throw new Error('Invalid http node!')
 
   route.push({ type: MarkdownType.HTTP_METHOD, content: exec[1] })
-  for (let match of exec[2].matchAll(/([^{]+)({[^}]+})?/g)) {
+  for (const match of exec[2].matchAll(/([^{]+)({[^}]+})?/g)) {
     route.push({ type: MarkdownType.TEXT, content: match[1] })
     if (match[2]) route.push({ type: MarkdownType.HTTP_PARAM, content: match[2] })
   }
@@ -190,7 +190,7 @@ function parseHttp (node: ParsedNode): HttpMarkdownNode {
 function parseCode (node: ParsedNode): CodeBlockMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let exec = /^```([^\n]*)\n([\n.]*)\n```$/i.exec(node.markup)
+  const exec = /^```([^\n]*)\n((?:.|\n)*)\n```$/i.exec(node.markup)
   if (!exec) throw new Error('Invalid code block node!')
 
   return {
@@ -203,7 +203,7 @@ function parseCode (node: ParsedNode): CodeBlockMarkdownNode {
 function parseTable (node: ParsedNode): TableMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let [ head, align, ...rows ] = node.markup.split('\n').filter(Boolean)
+  const [ head, align, ...rows ] = node.markup.split('\n').filter(Boolean)
   return {
     type: MarkdownType.TABLE,
     centered: align.split('|').slice(1, -1)
@@ -244,6 +244,6 @@ function formatBlock (node: ParsedNode): MarkdownNode {
 }
 
 export default function parseMarkup (markdown: string): MarkdownNode[] {
-  let blocks = parseBlocks(BLOCK_RULE_SET, markdown)
+  const blocks = parseBlocks(BLOCK_RULE_SET, markdown)
   return blocks.map((b) => formatBlock(b))
 }

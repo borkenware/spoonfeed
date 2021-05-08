@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,12 +25,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { parseInline } from './util'
-import { MarkdownType } from '@t/markdown'
-import type { MarkdownNode, ParsedNode, LinkMarkdownNode, DocumentMarkdownNode, ImageMarkdownNode, VideoMarkdownNode } from '@t/markdown'
+import { parseInline } from './util.js'
+import { MarkdownType } from '../types/markdown.js'
+import type { MarkdownNode, ParsedNode, LinkMarkdownNode, DocumentMarkdownNode, ImageMarkdownNode, VideoMarkdownNode } from '../types/markdown.js'
 
 /* eslint-disable @typescript-eslint/naming-convention -- ESLint config needs fix, see borkenware/eslint-config#1 */
-const LINK_PATH = '((\\/[\\+~%\\/\\.\\w\\-_]*)?\\??([\\-\\+=&;%@\\.\\w_]*)#?([\\.\\!\\/\\\\\\w]*))'
+const LINK_PATH = '((\\/[\\+~%\\/\\.\\w\\-_]*)?\\??([\\-\\+=&;%@\\.\\w_]*)#?([\\.\\!\\/\\\\\\w-]*))'
 const LINK = `((([a-z]{3,9}:(\\/\\/)?)([\\-;:&=\\+\\$,\\w]+@)?[a-z0-9\\.\\-]+|(www\\.|[\\-;:&=\\+\\$,\\w]+@)[a-z0-9\\.\\-]+)${LINK_PATH}?)`
 const EMAIL = '(([^<>()\\[\\]\\\\.,;:\\s@"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@"]+)*)|(".+"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))'
 
@@ -38,11 +38,11 @@ const YT_RE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu\.be))(\/
 /* eslint-enable @typescript-eslint/naming-convention */
 
 const INLINE_RULE_SET = [
-  { regexp: /(?:(?<!\\)\*){2}(.+?)(?:(?<!\\)\*){2}(?!\*)/gim, type: MarkdownType.BOLD, recurse: true, extract: 1 },
-  { regexp: /(?:(?<!\\)_){2}(.+?)(?:(?<!\\)_){2}(?!_)/gim, type: MarkdownType.UNDERLINE, recurse: true, extract: 1 },
-  { regexp: /(?<!\\)(\*|_)(.+?)(?<!\\)\1(?!\1)/gim, type: MarkdownType.ITALIC, recurse: true, extract: 2 },
-  { regexp: /(?:(?<!\\)~){2}(.+?)(?:(?<!\\)~){2}(?!~)/gim, type: MarkdownType.STRIKE_THROUGH, recurse: true, extract: 1 },
-  { regexp: /(?<!\\)`(.+?)(?<!\\)`(?!`)/gim, type: MarkdownType.CODE, extract: 1 },
+  { regexp: /(?:(?<!\\)\*){2}((?:.|\n)+?)(?:(?<!\\)\*){2}(?!\*)/gim, type: MarkdownType.BOLD, recurse: true, extract: 1 },
+  { regexp: /(?:(?<!\\)_){2}((?:.|\n)+?)(?:(?<!\\)_){2}(?!_)/gim, type: MarkdownType.UNDERLINE, recurse: true, extract: 1 },
+  { regexp: /(?<!\\)(\*|_)((?:.|\n)+?)(?<!\\)\1(?!\1)/gim, type: MarkdownType.ITALIC, recurse: true, extract: 2 },
+  { regexp: /(?:(?<!\\)~){2}((?:.|\n)+?)(?:(?<!\\)~){2}(?!~)/gim, type: MarkdownType.STRIKE_THROUGH, recurse: true, extract: 1 },
+  { regexp: /(?<!\\)`((?:.|\n)+?)(?<!\\)`(?!`)/gim, type: MarkdownType.CODE, extract: 1 },
   { regexp: /(?<!\\)<br\/?>/gim, type: MarkdownType.LINE_BREAK },
 
   { regexp: new RegExp(`!\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: MarkdownType.IMAGE },
@@ -51,8 +51,8 @@ const INLINE_RULE_SET = [
   { regexp: new RegExp(`!!v\\[${LINK_PATH}]`, 'img'), type: MarkdownType.VIDEO },
   { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK}\\)`, 'img'), type: MarkdownType.LINK },
   { regexp: new RegExp(`\\[(?:[^\\]]|\\\\])+]\\(${LINK_PATH}\\)`, 'img'), type: MarkdownType.LINK },
-  { regexp: /\[(?:[^\]]|\\])+]\(##[\w!./\\]*(\/[\w!./\\]*)?(#[\w!./\\]*)?\)/gim, type: MarkdownType.DOCUMENT },
-  { regexp: /\[(?:[^\]]|\\])+]\(#[\w!./\\]*\)/gim, type: MarkdownType.ANCHOR },
+  { regexp: /\[(?:[^\]]|\\])+]\(##[\w-!./\\]*(\/[\w-!./\\]*)?(#[\w-!./\\]*)?\)/gim, type: MarkdownType.DOCUMENT },
+  { regexp: /\[(?:[^\]]|\\])+]\(#[\w-!./\\]*\)/gim, type: MarkdownType.ANCHOR },
   { regexp: new RegExp(EMAIL, 'img'), type: MarkdownType.EMAIL },
   { regexp: new RegExp(LINK, 'img'), type: MarkdownType.LINK },
 ]
@@ -61,7 +61,7 @@ function parseLink (node: ParsedNode): LinkMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
   if (node.markup.startsWith('[')) {
-    let exec = /\[(.+?(?<!\\))]\((.+)\)/i.exec(node.markup)
+    const exec = /\[(.+?(?<!\\))]\((.*)\)/i.exec(node.markup)
     if (!exec) throw new Error('Invalid link node!')
 
     if (exec[2].startsWith('#')) {
@@ -91,10 +91,10 @@ function parseLink (node: ParsedNode): LinkMarkdownNode {
 function parseDocument (node: ParsedNode): DocumentMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let exec = /\[((?:[^\]]|\\])+)]\(##([\w!.\\]*)(?:\/([\w!.\\]*))?(#[\w!./\\]*)?\)/i.exec(node.markup)
+  const exec = /\[((?:[^\]]|\\])+)]\(##([\w-!.\\]*)(?:\/([\w-!.\\]*))?(#[\w-!./\\]*)?\)/i.exec(node.markup)
   if (!exec) throw new Error('Invalid document node!')
 
-  let [ , label, category, document, anchor ] = exec
+  const [ , label, category, document, anchor ] = exec
   return {
     type: MarkdownType.DOCUMENT,
     category: document ? category : null,
@@ -108,7 +108,7 @@ function parseDocument (node: ParsedNode): DocumentMarkdownNode {
 function parseImage (node: ParsedNode): ImageMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let exec = /\[((?:[^\]]|\\])+)]\(##([\w!.\\]*)(?:\/([\w!.\\]*))?(#[\w!./\\]*)?\)/i.exec(node.markup)
+  const exec = /\[(.+?(?<!\\))]\((.*)\)/i.exec(node.markup)
   if (!exec) throw new Error('Invalid image node!')
 
   return {
@@ -121,8 +121,8 @@ function parseImage (node: ParsedNode): ImageMarkdownNode {
 function parseVideo (node: ParsedNode): VideoMarkdownNode {
   if (typeof node.markup !== 'string') throw new Error('Invalid non-string node!')
 
-  let content = node.markup.slice(4, -1)
-  let ytExec = YT_RE.exec(content)
+  const content = node.markup.slice(4, -1)
+  const ytExec = YT_RE.exec(content)
   if (ytExec) {
     return {
       type: MarkdownType.VIDEO,
@@ -146,6 +146,7 @@ function formatNode (node: ParsedNode): MarkdownNode {
     case MarkdownType.STRIKE_THROUGH:
       if (typeof node.markup === 'string') throw new Error('Invalid string node!')
       return { type: node.node, content: node.markup.map((n) => formatNode(n)) }
+    case MarkdownType.TEXT:
     case MarkdownType.CODE:
     case MarkdownType.HTTP_METHOD:
     case MarkdownType.HTTP_PARAM:
@@ -171,6 +172,6 @@ function formatNode (node: ParsedNode): MarkdownNode {
 }
 
 export default function parseInlineMarkup (markdown: string): MarkdownNode[] {
-  let nodes = parseInline(INLINE_RULE_SET, markdown)
+  const nodes = parseInline(INLINE_RULE_SET, markdown)
   return nodes.map((n) => formatNode(n))
 }

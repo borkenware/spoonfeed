@@ -83,9 +83,6 @@ Where built assets will be saved.
 What the final result should compile to. Possible values are:
   - `preact` (Default)
   - `html` (**Not implemented**)
-  - `html+turbolinks` (**Not implemented**)<br>
-*What's Turbolinks?* - [Turbolinks](https://github.com/turbolinks/turbolinks) is a small JavaScript library that makes
-navigating a web page a bit faster. Check out their README for more details.
 
 - `build.sourcemaps` - boolean (default: `true`)<br>
 Whether source maps should be generated or not.

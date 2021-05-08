@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,17 +25,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { join } = require('path')
-const { readFileSync, writeFileSync } = require('fs')
-const { execSync } = require('child_process')
+import { readFileSync, writeFileSync } from 'fs'
+import { execSync } from 'child_process'
 
 // Replace contributors count
-let contribCount = execSync('git --no-pager shortlog -s -n --no-merges', { stdio: [ 'inherit', 'pipe', 'pipe' ] })
+const contribCount = execSync('git --no-pager shortlog -s -n --no-merges', { stdio: [ 'inherit', 'pipe', 'pipe' ] })
   .toString()
   .split('\n')
   .filter(Boolean)
   .length
 
-let sfCli = join(__dirname, 'dist/cli.js')
-let src = readFileSync(sfCli, 'utf8')
-writeFileSync(sfCli, src.replace('##{CONTRIBUTORS}', contribCount), 'utf8')
+const sfCli = new URL('./dist/cli/index.js', import.meta.url)
+writeFileSync(sfCli, readFileSync(sfCli, 'utf8').replace('##{CONTRIBUTORS}', contribCount), 'utf8')

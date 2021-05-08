@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import log from '../log'
+import log from '../log.js'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires -- We use require here so it doesn't get bundled by TS
 const { version: VERSION } = require('../../package.json') as { version: string }
@@ -72,7 +72,7 @@ if (require.main?.filename === __filename) {
   console.log(`Spoonfeed v${VERSION}`, '\n')
 
   if (process.argv.includes('--debug')) log.setDebug(true)
-  let command = process.argv.length > 2 ? process.argv[process.argv.length - 1] : ''
+  const command = process.argv.length > 2 ? process.argv[process.argv.length - 1] : ''
   switch (command) {
     case 'bundle':
       bundle(false)

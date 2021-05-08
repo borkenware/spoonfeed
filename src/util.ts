@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Borkenware, All rights reserved.
+ * Copyright (c) 2020-2021 Borkenware, All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -43,10 +43,6 @@ export function extendedTypeof (obj: unknown): ExtendedType {
   return typeof obj
 }
 
-export function hasOwnProperty<TObject, TProp extends PropertyKey> (obj: TObject, prop: TProp): obj is TObject & Record<TProp, unknown> {
-  return Object.prototype.hasOwnProperty.call(obj, prop)
-}
-
 export function formatDelta (from: bigint, to: bigint): string {
   let passes = 0
   let delta = Number(to - from)
@@ -73,10 +69,10 @@ export function slugToTitle (slug: string): string {
 
 export async function rmdirRf (path: string): Promise<void> {
   if (existsSync(path)) {
-    let files = await readdir(path)
-    for (let file of files) {
-      let curPath = join(path, file)
-      let stat = await lstat(curPath)
+    const files = await readdir(path)
+    for (const file of files) {
+      const curPath = join(path, file)
+      const stat = await lstat(curPath)
 
       if (stat.isDirectory()) {
         await rmdirRf(curPath)
