@@ -10,9 +10,6 @@
   "engines": {
     "node": ">= 14"
   },
-  "bin": {
-    "spoonfeed": "dist/cli/index.js"
-  },
   "scripts": {
     "lint": "eslint src --ext ts",
     "build": "tsc && node postbuild.js"
