@@ -155,6 +155,10 @@ function doParseList (list: string): ListMarkdownNode {
     })
   }
 
+  if (buffer.length) {
+    content.push(doParseList(buffer.join('\n')))
+  }
+
   return {
     type: MarkdownType.LIST,
     ordered: Boolean(/^ *\d/.exec(list)),
